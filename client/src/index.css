@@ -1,0 +1,225 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg: #fafaf8;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f3f1ed;
+  --color-text: #1a1a1a;
+  --color-text-muted: #6b6b6b;
+  --color-primary: #e85d2a;
+  --color-primary-hover: #d14e1e;
+  --color-success: #16a34a;
+  --color-danger: #dc2626;
+  --color-info: #2563eb;
+  --color-warning: #f59e0b;
+  --color-border: #e5e2dc;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: "DM Sans", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  overscroll-behavior-y: contain;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(232, 93, 42, 0.3);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: rgba(232, 93, 42, 0.18);
+}
+
+.mono {
+  font-family: "DM Mono", monospace;
+}
+
+.surface-card {
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.surface-card-alt {
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface-muted);
+}
+
+.btn-primary {
+  border-radius: 0.75rem;
+  background: var(--color-primary);
+  color: white;
+  transition: all 200ms ease;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn-secondary {
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: transparent;
+  color: var(--color-text);
+  transition: all 200ms ease;
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface-muted);
+}
+
+.btn-ghost {
+  border-radius: 0.75rem;
+  background: transparent;
+  color: var(--color-text-muted);
+  transition: all 200ms ease;
+}
+
+.btn-ghost:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--color-primary);
+}
+
+.btn-danger {
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  border-radius: 0.75rem;
+  background: transparent;
+  color: var(--color-danger);
+  transition: all 200ms ease;
+}
+
+.btn-danger:hover {
+  background: rgba(220, 38, 38, 0.05);
+}
+
+.field-input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: white;
+  color: var(--color-text);
+  padding: 0.75rem 1rem;
+  outline: none;
+  transition: all 200ms ease;
+}
+
+.field-input::placeholder {
+  color: #9ca3af;
+}
+
+.field-input:focus {
+  border-color: rgba(232, 93, 42, 0.65);
+  box-shadow: 0 0 0 4px rgba(232, 93, 42, 0.12);
+}
+
+@keyframes loginEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pinShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-10px);
+  }
+
+  40% {
+    transform: translateX(10px);
+  }
+
+  60% {
+    transform: translateX(-8px);
+  }
+
+  80% {
+    transform: translateX(8px);
+  }
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cardLiftIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.login-enter {
+  animation: loginEnter 320ms ease-out;
+}
+
+.pin-shake {
+  animation: pinShake 380ms ease;
+}
+
+.toast-enter {
+  animation: loginEnter 220ms ease-out;
+}
+
+.page-enter {
+  animation: pageEnter 220ms ease-out;
+}

@@ -1,0 +1,1 @@
+-- No-op migration kept to preserve migration ordering in existing environments.

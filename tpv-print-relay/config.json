@@ -1,0 +1,23 @@
+{
+  "serverUrl": "",
+  "authToken": "",
+  "restaurantId": "",
+  "printers": {
+    "kitchen": {
+      "enabled": false,
+      "type": "usb",
+      "usbPort": "",
+      "networkIp": "",
+      "networkPort": 9100
+    },
+    "receipt": {
+      "enabled": false,
+      "type": "usb",
+      "usbPort": "",
+      "networkIp": "",
+      "networkPort": 9100
+    }
+  },
+  "autoReconnect": true,
+  "reconnectInterval": 5000
+}

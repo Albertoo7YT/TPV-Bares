@@ -1,0 +1,2 @@
+ALTER TABLE "Table"
+ADD COLUMN "zone" TEXT NOT NULL DEFAULT 'Interior';

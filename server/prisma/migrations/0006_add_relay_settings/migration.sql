@@ -1,0 +1,6 @@
+ALTER TABLE "Restaurant"
+ADD COLUMN "relayToken" TEXT,
+ADD COLUMN "autoPrintKitchen" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN "autoPrintReceipt" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN "printModifications" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN "kitchenCopies" INTEGER NOT NULL DEFAULT 1;

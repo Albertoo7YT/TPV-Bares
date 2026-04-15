@@ -1,0 +1,32 @@
+{
+  "name": "tpv-print-relay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Relay local para impresoras TPV con WebSocket, panel local y soporte ESC/POS.",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node src/index.ts",
+    "build": "tsc",
+    "package": "npx pkg dist/index.js --targets node18-win-x64 --output release/TPVPrintRelay.exe --assets \"panel/**/*\""
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "node-systray": "^2.0.0",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.14.1",
+    "pkg": "^5.8.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "pkg": {
+    "assets": [
+      "panel/**/*"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ]
+  }
+}

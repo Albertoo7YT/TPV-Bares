@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BH">
+  <rect width="512" height="512" rx="112" fill="#09090b" />
+  <rect x="28" y="28" width="456" height="456" rx="92" fill="#1c1917" stroke="#f59e0b" stroke-width="14" />
+  <circle cx="256" cy="148" r="72" fill="#f59e0b" opacity="0.18" />
+  <text x="256" y="300" text-anchor="middle" font-size="182" font-family="Segoe UI, Arial, sans-serif" font-weight="800" fill="#f8fafc">BH</text>
+</svg>
