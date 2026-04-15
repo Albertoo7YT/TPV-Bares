@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import type { StatsResponse } from "@tpv/shared";
+import type { StatsResponse, TableRotationStat } from "@tpv/shared";
 import {
   Bar,
   BarChart,
@@ -211,7 +211,7 @@ export default function AdminStatsPage() {
               <YAxis stroke="#78716c" />
               <Tooltip formatter={(value) => formatUnitsTooltip(value, "turnos")} />
               <Bar dataKey="turns" radius={[10, 10, 0, 0]}>
-                {stats.tableRotations.map((entry) => (
+                {stats.tableRotations.map((entry: TableRotationStat) => (
                   <Cell
                     key={entry.label}
                     fill={entry.turns >= 7 ? "#16a34a" : "#f59e0b"}
