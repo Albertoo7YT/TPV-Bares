@@ -5,9 +5,13 @@
     "noEmit": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "jsx": "react-jsx",
+    "baseUrl": ".",
     "moduleResolution": "Bundler",
+    "paths": {
+      "@tpv/shared": ["../shared/src/index.ts"]
+    },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "../shared/src/**/*.ts", "vite.config.ts"]
 }
