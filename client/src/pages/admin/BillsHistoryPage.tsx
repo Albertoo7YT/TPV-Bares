@@ -101,6 +101,7 @@ export default function BillsHistoryPage() {
   const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
   const [selectedBill, setSelectedBill] = useState<BillDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [printingBillId, setPrintingBillId] = useState<string | null>(null);
 
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -326,6 +327,31 @@ export default function BillsHistoryPage() {
     setSortColumn(column);
     setSortOrder(column === "number" ? "asc" : "desc");
   };
+
+  async function handlePrintBill() {
+    if (!selectedBill) {
+      return;
+    }
+
+    setPrintingBillId(selectedBill.id);
+
+    try {
+      await api.post(`/bills/${selectedBill.id}/print`);
+      showToast({
+        type: "success",
+        title: "Ticket",
+        message: "Ticket enviado a la impresora de caja"
+      });
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Ticket",
+        message: error instanceof Error ? error.message : "No se pudo imprimir el ticket"
+      });
+    } finally {
+      setPrintingBillId(null);
+    }
+  }
 
   return (
     <section className="space-y-6 page-enter">
@@ -656,8 +682,8 @@ export default function BillsHistoryPage() {
                       <button className="btn-secondary px-4 py-3 text-sm font-medium" onClick={() => window.print()} type="button">
                         Ver ticket
                       </button>
-                      <button className="btn-primary px-4 py-3 text-sm font-medium" onClick={() => window.print()} type="button">
-                        Imprimir
+                      <button className="btn-primary px-4 py-3 text-sm font-medium" disabled={printingBillId === selectedBill.id} onClick={() => void handlePrintBill()} type="button">
+                        {printingBillId === selectedBill.id ? "Imprimiendo..." : "Imprimir"}
                       </button>
                     </div>
                   </section>
