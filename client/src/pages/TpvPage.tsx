@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
+import ProductCard from "../components/ProductCard";
 import Spinner from "../components/Spinner";
 import { useSocket } from "../context/SocketContext";
 import { useToast } from "../context/ToastContext";
@@ -657,6 +658,22 @@ export default function TpvPage() {
               {activeCategory?.products.map((product) => {
                 const available = product.available ?? true;
                 const productCount = productSessionCounts[product.id] ?? 0;
+
+                return (
+                  <ProductCard
+                    key={product.id}
+                    available={available}
+                    count={productCount}
+                    highlight={highlightedProductId === product.id}
+                    highlightClassName="bg-emerald-50 shadow-sm"
+                    imageUrl={product.imageUrl}
+                    loading={addingProductId === product.id}
+                    name={product.name}
+                    onPress={() => void handleProductPress(product)}
+                    price={toNumber(product.price)}
+                    variant="auto"
+                  />
+                );
                 const hasImage = Boolean(product.imageUrl);
 
                 return (

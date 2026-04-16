@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import ProductCard from "../components/ProductCard";
 import Skeleton from "../components/Skeleton";
 import Spinner from "../components/Spinner";
 import { useSocket } from "../context/SocketContext";
@@ -630,13 +631,27 @@ export default function OrderPage() {
             {activeCategory?.products.map((product) => {
               const inCartCount = cart.filter((item) => item.productId === product.id).reduce((sum, item) => sum + item.quantity, 0);
               const available = product.available ?? true;
+
+              return (
+                <ProductCard
+                  key={product.id}
+                  available={available}
+                  count={inCartCount}
+                  highlight={highlightedProductId === product.id}
+                  imageUrl={product.imageUrl}
+                  name={product.name}
+                  onPress={() => adjustProductQuantity(product, 1)}
+                  price={toNumber(product.price)}
+                  variant="auto"
+                />
+              );
               const hasImage = Boolean(product.imageUrl);
 
               return (
                 <article key={product.id} className={`overflow-hidden rounded-xl border border-[#E5E2DC] bg-white transition-all duration-200 ${highlightedProductId === product.id ? "bg-orange-50 shadow-sm" : ""} ${available ? "" : "opacity-40"}`}>
-                  <div className="flex min-h-[84px] min-w-0 items-stretch gap-3 p-3">
+                  <div className="flex min-h-[84px] min-w-0 items-start gap-2.5 p-3 sm:gap-3">
                     {hasImage ? (
-                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[var(--color-surface-muted)]">
+                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[var(--color-surface-muted)] sm:h-16 sm:w-16">
                         <img alt={product.name} className="h-full w-full object-cover" src={buildAssetUrl(product.imageUrl!)} />
                       </div>
                     ) : (
@@ -644,10 +659,10 @@ export default function OrderPage() {
                         <span aria-hidden="true">🍔</span>
                       </div>
                     )}
-                  <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="truncate text-sm font-medium text-[var(--color-text)]">{product.name}</h2>
-                      <p className="mt-2 text-sm font-bold text-[var(--color-primary)]">{formatCurrency(toNumber(product.price))}</p>
+                  <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1 pr-1">
+                      <h2 className="line-clamp-2 text-sm font-medium leading-5 text-[var(--color-text)]">{product.name}</h2>
+                      <p className="mt-1.5 text-sm font-bold text-[var(--color-primary)]">{formatCurrency(toNumber(product.price))}</p>
                       {!available ? <p className="mt-1 text-xs font-medium text-red-600">Agotado</p> : null}
                     </div>
 

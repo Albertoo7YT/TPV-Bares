@@ -218,3 +218,65 @@
 [2026-04-16T14:56:19.088Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
 [2026-04-16T14:56:24.092Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
 [2026-04-16T14:56:24.288Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"Qw5UDJaqHHTR4oklAAAD"}
+[2026-04-16T15:08:16.166Z] [WARN] WebSocket desconectado. {"reason":"transport close"}
+[2026-04-16T15:08:16.167Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:08:21.172Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T15:08:21.354Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"LHoXjotxjSXZNj5wAAAD"}
+[2026-04-16T15:08:21.395Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:08:21.396Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:08:26.410Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T15:08:26.577Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"o7lQmSIXYgNpKTbCAAAH"}
+[2026-04-16T15:08:26.584Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:08:26.586Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:08:31.596Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T15:08:31.744Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"593fiLHTecelPJhNAAAJ"}
+[2026-04-16T15:08:31.751Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:08:31.752Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:08:36.757Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T15:08:36.916Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"rmptlDgocjboG10jAAAL"}
+[2026-04-16T15:08:36.924Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:08:36.925Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:08:41.930Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T15:08:42.122Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"dtyYTmv8pyn8KbbfAAAN"}
+[2026-04-16T15:08:42.130Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:08:42.131Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:08:47.146Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T15:08:47.316Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"cmsFx_KzLUhuERgkAAAP"}
+[2026-04-16T15:08:47.323Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:08:47.324Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:08:52.340Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T15:08:52.542Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"aijw6uzRbgNlVN_8AAAR"}
+[2026-04-16T15:08:52.551Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:08:52.552Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:08:57.554Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T15:08:57.716Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"tiG0_ZRDEngOK31LAAAT"}
+[2026-04-16T15:08:57.724Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:08:57.725Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:09:02.736Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T15:09:02.904Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"WOKdWPz1ghi5MLHxAAAV"}
+[2026-04-16T15:09:02.912Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:09:02.913Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:09:07.570Z] [INFO] Reiniciando conexion WebSocket manualmente.
+[2026-04-16T15:09:07.582Z] [INFO] Configuracion de conexion actualizada desde el panel.
+[2026-04-16T15:09:07.748Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"uE-zJNjuS7aMhDihAAAX"}
+[2026-04-16T15:09:07.756Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:09:07.757Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:09:12.760Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T15:09:12.955Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"12xCgiYgcGeR92QcAAAZ"}
+[2026-04-16T15:09:12.962Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:09:12.963Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:09:17.969Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T15:09:18.115Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"dLHGt9vn-BCOw9D4AAAb"}
+[2026-04-16T15:09:18.122Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:09:18.123Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:09:23.129Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T15:09:23.294Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"SnehkAjGHBQ7IBMWAAAd"}
+[2026-04-16T15:09:23.305Z] [WARN] WebSocket desconectado. {"reason":"io server disconnect"}
+[2026-04-16T15:09:23.306Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T15:09:24.485Z] [INFO] Reiniciando conexion WebSocket manualmente.
+[2026-04-16T15:09:24.497Z] [INFO] Configuracion de conexion actualizada desde el panel.
+[2026-04-16T15:09:24.659Z] [INFO] Conectado al VPS por WebSocket. {"socketId":"u9ePnEQlD2413tizAAAf"}
+[2026-04-16T15:09:29.422Z] [INFO] Enviando bytes raw a impresora. {"type":"usb","bytes":196}
+[2026-04-16T15:09:59.413Z] [INFO] Enviando bytes raw a impresora. {"type":"usb","bytes":471}
+[2026-04-16T15:10:18.494Z] [INFO] Enviando bytes raw a impresora. {"type":"usb","bytes":480}
+[2026-04-16T15:12:11.590Z] [INFO] Enviando bytes raw a impresora. {"type":"usb","bytes":838}
