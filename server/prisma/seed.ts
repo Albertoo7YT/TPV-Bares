@@ -77,8 +77,8 @@ async function main() {
 
   const restaurant = await prisma.restaurant.create({
     data: {
-      name: "Burger House",
-      email: "admin@burgerhouse.com",
+      name: "Deja Vu",
+      email: "admin@dejavu.com",
       passwordHash: adminPasswordHash,
       address: "Calle Mayor 123, Madrid",
       phone: "+34 910 000 000",
@@ -158,7 +158,7 @@ async function main() {
     ]
   });
 
-  console.log("Seed completado para Burger House.");
+  console.log("Seed completado para Deja Vu.");
 }
 
 main()
