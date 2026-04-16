@@ -340,8 +340,8 @@ export async function getBillPreview(tableId: string, user: AuthenticatedUser) {
 export async function createBill(input: CreateBillInput, user: AuthenticatedUser) {
   const tableId = normalizeId(input.tableId, "tableId");
   const paymentMethod = normalizePaymentMethod(input.paymentMethod);
-  const cashAmount = normalizeOptionalAmount(input.cashAmount, "cashAmount");
-  const cardAmount = normalizeOptionalAmount(input.cardAmount, "cardAmount");
+  const normalizedCashAmount = normalizeOptionalAmount(input.cashAmount, "cashAmount");
+  const normalizedCardAmount = normalizeOptionalAmount(input.cardAmount, "cardAmount");
 
   await getTableOrThrow(user.restaurantId, tableId);
 
@@ -353,13 +353,13 @@ export async function createBill(input: CreateBillInput, user: AuthenticatedUser
 
   const previewItems = buildPreviewItems(orders);
   const totals = buildTotals(previewItems);
+  const cashAmount =
+    paymentMethod === "CARD" ? null : normalizedCashAmount;
+  const cardAmount =
+    paymentMethod === "CARD" ? totals.total : normalizedCardAmount;
 
   if (paymentMethod === "CASH" && cashAmount === null) {
     throw createHttpError(400, "Introduce la cantidad recibida en efectivo");
-  }
-
-  if (paymentMethod === "CARD" && cardAmount === null) {
-    throw createHttpError(400, "Introduce el importe cobrado con tarjeta");
   }
 
   if (paymentMethod === "MIXED") {
