@@ -1,0 +1,23 @@
+{
+  "serverUrl": "http://localhost:5173",
+  "authToken": "d5557f73-b295-431d-9e30-43d5a6a755b0",
+  "restaurantId": "cmo0jxirv0000vyeci4znj52z",
+  "printers": {
+    "kitchen": {
+      "enabled": true,
+      "type": "network",
+      "usbPort": "",
+      "networkIp": "",
+      "networkPort": 9100
+    },
+    "receipt": {
+      "enabled": false,
+      "type": "usb",
+      "usbPort": "",
+      "networkIp": "",
+      "networkPort": 9100
+    }
+  },
+  "autoReconnect": true,
+  "reconnectInterval": 5000
+}

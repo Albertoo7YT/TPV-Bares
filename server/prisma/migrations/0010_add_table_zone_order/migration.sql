@@ -1,0 +1,2 @@
+ALTER TABLE "Restaurant"
+ADD COLUMN "tableZoneOrder" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

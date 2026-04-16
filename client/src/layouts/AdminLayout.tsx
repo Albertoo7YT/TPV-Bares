@@ -71,6 +71,12 @@ const navItems: AdminNavItem[] = [
     icon: <PhoneIcon />
   },
   {
+    to: "/admin/printers",
+    label: "Impresoras",
+    section: "Configuracion",
+    icon: <PrinterIcon />
+  },
+  {
     to: "/admin/settings",
     label: "Datos del restaurante",
     section: "Configuracion",
@@ -89,6 +95,7 @@ const pageTitles: Record<string, string> = {
   "/admin/reports": "Informes de ventas",
   "/admin/users": "Usuarios y PINs",
   "/admin/devices": "Dispositivos",
+  "/admin/printers": "Impresoras",
   "/admin/settings": "Datos del restaurante"
 };
 
@@ -311,6 +318,14 @@ function PhoneIcon() {
   return (
     <svg {...iconProps()} fill="none" viewBox="0 0 24 24">
       <path d="M8 3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm4 15h.01" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function PrinterIcon() {
+  return (
+    <svg {...iconProps()} fill="none" viewBox="0 0 24 24">
+      <path d="M7 8V5h10v3M6 17h12v2H6zm-1-8h14a2 2 0 0 1 2 2v4h-4v-2H7v2H3v-4a2 2 0 0 1 2-2Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
     </svg>
   );
 }

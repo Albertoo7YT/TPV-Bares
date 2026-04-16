@@ -7,6 +7,7 @@ import {
   deleteTable,
   listTablesWithStatus,
   updateTable,
+  updateTableZoneOrder,
   updateTableStatus
 } from "../services/tableService.js";
 
@@ -42,6 +43,15 @@ router.post("/bulk", roleMiddleware(["ADMIN"]), async (request, response, next) 
   try {
     const tables = await createTablesBulk(request.user!.restaurantId, request.body);
     response.status(201).json(tables);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/zones/order", roleMiddleware(["ADMIN"]), async (request, response, next) => {
+  try {
+    const tables = await updateTableZoneOrder(request.user!.restaurantId, request.body ?? {});
+    response.json(tables);
   } catch (error) {
     next(error);
   }

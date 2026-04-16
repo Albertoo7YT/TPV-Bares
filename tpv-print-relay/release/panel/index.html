@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TPV Print Relay</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Relay local</p>
+          <h1>TPV Print Relay</h1>
+          <p class="subtitle">Conexion local con el servidor TPV y gestion de impresoras termicas.</p>
+        </div>
+      </header>
+
+      <section class="card status-card">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Estado</p>
+            <h2>Conexion actual</h2>
+          </div>
+          <div id="status-indicator" class="status-indicator offline">
+            <span class="status-dot"></span>
+            <span id="status-text">Desconectado</span>
+          </div>
+        </div>
+
+        <div class="status-grid">
+          <div class="stat">
+            <span class="label">Servidor</span>
+            <strong id="server-url-value">-</strong>
+          </div>
+          <div class="stat">
+            <span class="label">Tiempo activo</span>
+            <strong id="uptime-value">-</strong>
+          </div>
+          <div class="stat">
+            <span class="label">Ultima impresion cocina</span>
+            <strong id="last-kitchen-value">-</strong>
+          </div>
+          <div class="stat">
+            <span class="label">Ultima impresion caja</span>
+            <strong id="last-receipt-value">-</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Conexion al servidor</p>
+            <h2>Acceso al VPS</h2>
+          </div>
+        </div>
+
+        <form id="config-form" class="form-grid">
+          <label class="field full">
+            <span>URL del servidor</span>
+            <input id="serverUrl" name="serverUrl" type="text" placeholder="https://tpv.tudominio.com" />
+          </label>
+
+          <label class="field">
+            <span>Token de autenticacion</span>
+            <input id="authToken" name="authToken" type="text" placeholder="Token del relay" />
+          </label>
+
+          <label class="field">
+            <span>ID del restaurante</span>
+            <input id="restaurantId" name="restaurantId" type="text" placeholder="restaurant-id" />
+          </label>
+
+          <label class="field">
+            <span>Reconectar automaticamente</span>
+            <select id="autoReconnect" name="autoReconnect">
+              <option value="true">Si</option>
+              <option value="false">No</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Intervalo base (ms)</span>
+            <input id="reconnectInterval" name="reconnectInterval" type="number" min="1000" step="1000" />
+          </label>
+
+          <div class="actions full">
+            <button type="submit" id="connect-button">Conectar</button>
+            <p id="form-status" class="helper"></p>
+          </div>
+        </form>
+      </section>
+
+      <section class="printer-grid">
+        <article class="card">
+          <div class="section-header">
+            <div>
+              <p class="section-kicker">Impresora de cocina</p>
+              <h2>Cocina</h2>
+            </div>
+            <span id="kitchen-printer-status" class="printer-state state-disabled">Desactivada</span>
+          </div>
+
+          <div class="form-grid">
+            <label class="field">
+              <span>Activada</span>
+              <select id="kitchen-enabled" name="kitchen.enabled">
+                <option value="true">Activada</option>
+                <option value="false">Desactivada</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Tipo</span>
+              <select id="kitchen-type" name="kitchen.type">
+                <option value="usb">USB</option>
+                <option value="network">Red</option>
+              </select>
+            </label>
+
+            <div id="kitchen-usb-fields" class="field-group full">
+              <label class="field grow">
+                <span>Puerto o impresora USB</span>
+                <select id="kitchen-usbPort" name="kitchen.usbPort"></select>
+              </label>
+              <button type="button" class="secondary compact" data-detect="kitchen">Detectar</button>
+            </div>
+
+            <div id="kitchen-network-fields" class="form-grid nested full hidden">
+              <label class="field">
+                <span>IP</span>
+                <input id="kitchen-networkIp" name="kitchen.networkIp" type="text" placeholder="192.168.1.50" />
+              </label>
+
+              <label class="field">
+                <span>Puerto</span>
+                <input id="kitchen-networkPort" name="kitchen.networkPort" type="number" min="1" max="65535" />
+              </label>
+            </div>
+
+            <div class="actions full">
+              <button type="button" class="secondary" data-test="kitchen">Imprimir test</button>
+              <p id="kitchen-help" class="helper"></p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="section-header">
+            <div>
+              <p class="section-kicker">Impresora de caja</p>
+              <h2>Caja</h2>
+            </div>
+            <span id="receipt-printer-status" class="printer-state state-disabled">Desactivada</span>
+          </div>
+
+          <div class="form-grid">
+            <label class="field">
+              <span>Activada</span>
+              <select id="receipt-enabled" name="receipt.enabled">
+                <option value="true">Activada</option>
+                <option value="false">Desactivada</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Tipo</span>
+              <select id="receipt-type" name="receipt.type">
+                <option value="usb">USB</option>
+                <option value="network">Red</option>
+              </select>
+            </label>
+
+            <div id="receipt-usb-fields" class="field-group full">
+              <label class="field grow">
+                <span>Puerto o impresora USB</span>
+                <select id="receipt-usbPort" name="receipt.usbPort"></select>
+              </label>
+              <button type="button" class="secondary compact" data-detect="receipt">Detectar</button>
+            </div>
+
+            <div id="receipt-network-fields" class="form-grid nested full hidden">
+              <label class="field">
+                <span>IP</span>
+                <input id="receipt-networkIp" name="receipt.networkIp" type="text" placeholder="192.168.1.60" />
+              </label>
+
+              <label class="field">
+                <span>Puerto</span>
+                <input id="receipt-networkPort" name="receipt.networkPort" type="number" min="1" max="65535" />
+              </label>
+            </div>
+
+            <div class="actions full">
+              <button type="button" class="secondary" data-test="receipt">Imprimir test</button>
+              <p id="receipt-help" class="helper"></p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Log</p>
+            <h2>Actividad reciente</h2>
+          </div>
+        </div>
+        <textarea id="log-output" class="log-output" readonly></textarea>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>

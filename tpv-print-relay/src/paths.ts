@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 type ProcessWithPkg = NodeJS.Process & {
@@ -21,5 +22,14 @@ export function getSnapshotBaseDir() {
 }
 
 export function getPanelDir() {
-  return isPackaged() ? resolve(getSnapshotBaseDir(), "panel") : resolve(getRuntimeBaseDir(), "panel");
+  if (!isPackaged()) {
+    return resolve(getRuntimeBaseDir(), "panel");
+  }
+
+  const runtimePanelDir = resolve(getRuntimeBaseDir(), "panel");
+  if (existsSync(runtimePanelDir)) {
+    return runtimePanelDir;
+  }
+
+  return resolve(getSnapshotBaseDir(), "panel");
 }

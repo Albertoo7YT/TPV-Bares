@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Skeleton from "../components/Skeleton";
 import Spinner from "../components/Spinner";
@@ -112,10 +112,23 @@ export default function TablesPage() {
     };
   }, [socket]);
 
-  const interiorTables = tables.filter((table) => !isTerraceTable(table));
-  const terraceTables = tables.filter((table) => isTerraceTable(table));
   const occupiedCount = tables.filter((table) => table.status === "OCCUPIED").length;
   const freeCount = tables.filter((table) => table.status === "FREE").length;
+  const zoneSections = useMemo(() => {
+    const groupedTables = new Map<string, TableItem[]>();
+
+    for (const table of tables) {
+      const zoneName = (table.zone ?? "").trim() || "Sin zona";
+      const currentZoneTables = groupedTables.get(zoneName) ?? [];
+      currentZoneTables.push(table);
+      groupedTables.set(zoneName, currentZoneTables);
+    }
+
+    return Array.from(groupedTables.entries()).map(([title, zoneTables]) => ({
+        title,
+        tables: zoneTables.sort((left, right) => left.number - right.number)
+      }));
+  }, [tables]);
 
   const handleTablePress = async (table: TableItem) => {
     if (busyTableId) return;
@@ -125,13 +138,28 @@ export default function TablesPage() {
       if (!confirmed) return;
     }
 
+    navigate(`/order/${table.id}`);
+  };
+
+  const handleReserveToggle = async (table: TableItem) => {
+    if (busyTableId) return;
+    if (table.status === "OCCUPIED") return;
+
+    const nextStatus = table.status === "RESERVED" ? "FREE" : "RESERVED";
+    const successMessage =
+      nextStatus === "RESERVED"
+        ? `Mesa ${table.number} reservada`
+        : `Mesa ${table.number} marcada como libre`;
+
     setBusyTableId(table.id);
     setError(null);
+
     try {
-      await api.patch<TableItem>(`/tables/${table.id}/status`, { status: "OCCUPIED" });
-      navigate(`/order/${table.id}`);
+      await api.patch<TableItem>(`/tables/${table.id}/status`, { status: nextStatus });
+      await refreshTables({ silent: true });
+      showToast({ type: "success", title: "Mesas", message: successMessage });
     } catch (actionError) {
-      const message = actionError instanceof Error ? actionError.message : "No se pudo abrir la mesa";
+      const message = actionError instanceof Error ? actionError.message : "No se pudo actualizar la mesa";
       setError(message);
       showToast({ type: "error", title: "Mesas", message });
     } finally {
@@ -152,8 +180,18 @@ export default function TablesPage() {
 
       {error ? <div className="surface-card border-l-4 border-l-[var(--color-danger)] px-4 py-3 text-sm text-[var(--color-danger)]">{error}</div> : null}
 
-      <TablesSection busyTableId={busyTableId} emptyLabel="No hay mesas interiores configuradas." loading={loading} onTablePress={handleTablePress} tables={interiorTables} title="Interior" />
-      <TablesSection busyTableId={busyTableId} emptyLabel="No hay mesas de terraza configuradas." loading={loading} onTablePress={handleTablePress} tables={terraceTables} title="Terraza" />
+      {zoneSections.map((zone) => (
+        <TablesSection
+          busyTableId={busyTableId}
+          emptyLabel={`No hay mesas en ${zone.title}.`}
+          key={zone.title}
+          loading={loading}
+          onReserveToggle={handleReserveToggle}
+          onTablePress={handleTablePress}
+          tables={zone.tables}
+          title={zone.title}
+        />
+      ))}
 
       <section className="mt-12 border-t border-[var(--color-border)] pb-20 pt-6 text-center md:pb-6">
         <p className="text-sm text-[var(--color-text-muted)]">
@@ -179,8 +217,8 @@ export default function TablesPage() {
   );
 }
 
-function TablesSection(props: { title: string; tables: TableItem[]; loading: boolean; busyTableId: string | null; emptyLabel: string; onTablePress: (table: TableItem) => void }) {
-  const { title, tables, loading, busyTableId, emptyLabel, onTablePress } = props;
+function TablesSection(props: { title: string; tables: TableItem[]; loading: boolean; busyTableId: string | null; emptyLabel: string; onTablePress: (table: TableItem) => void; onReserveToggle: (table: TableItem) => void }) {
+  const { title, tables, loading, busyTableId, emptyLabel, onTablePress, onReserveToggle } = props;
 
   return (
     <section className="space-y-2">
@@ -206,34 +244,53 @@ function TablesSection(props: { title: string; tables: TableItem[]; loading: boo
       ) : (
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
           {tables.map((table) => (
-            <button
+            <article
               key={table.id}
-              aria-label={`Abrir mesa ${table.number}`}
-              className={`min-h-[68px] rounded-xl px-3.5 py-3 text-left transition-all duration-200 ${cardStyles[table.status]}`}
-              disabled={busyTableId === table.id}
-              onClick={() => onTablePress(table)}
-              type="button"
+              className={`relative min-h-[68px] rounded-xl px-3.5 py-3 transition-all duration-200 ${cardStyles[table.status]}`}
             >
-              <div className="flex items-start justify-between gap-3">
-                <p className="mono text-2xl font-bold text-[var(--color-text)]">{table.number}</p>
-                <div className="flex flex-col items-end gap-1">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${statusBadgeStyles[table.status]}`}
-                  >
-                    {formatStatusLabel(table.status)}
-                  </span>
-                  {table.status === "OCCUPIED" && table.summary && table.summary.partialTotal > 0 ? (
-                    <p className="text-sm font-bold text-[var(--color-text)]">{formatCurrency(table.summary.partialTotal)}</p>
-                  ) : null}
+              <button
+                aria-label={`Abrir mesa ${table.number}`}
+                className="absolute inset-0 rounded-xl"
+                disabled={busyTableId === table.id}
+                onClick={() => onTablePress(table)}
+                type="button"
+              />
+
+              <div className="relative z-[1]">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="mono text-2xl font-bold text-[var(--color-text)]">{table.number}</p>
+                  <div className="flex flex-col items-end gap-1">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${statusBadgeStyles[table.status]}`}
+                    >
+                      {formatStatusLabel(table.status)}
+                    </span>
+                    {table.status === "OCCUPIED" && table.summary && table.summary.partialTotal > 0 ? (
+                      <p className="text-sm font-bold text-[var(--color-text)]">{formatCurrency(table.summary.partialTotal)}</p>
+                    ) : null}
+                  </div>
                 </div>
+
+                {table.status === "OCCUPIED" && table.summary && (table.summary.activeOrdersCount > 0 || table.summary.partialTotal > 0) ? (
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                    {table.summary.activeOrdersCount} {table.summary.activeOrdersCount === 1 ? "pedido" : "pedidos"}
+                  </p>
+                ) : null}
               </div>
 
-              {table.status === "OCCUPIED" && table.summary && (table.summary.activeOrdersCount > 0 || table.summary.partialTotal > 0) ? (
-                <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                  {table.summary.activeOrdersCount} {table.summary.activeOrdersCount === 1 ? "pedido" : "pedidos"}
-                </p>
+              {table.status !== "OCCUPIED" ? (
+                <div className="relative z-[2] mt-2 flex justify-end">
+                  <button
+                    className="rounded-full px-2.5 py-1 text-[11px] font-medium text-[var(--color-text-muted)] transition-colors duration-200 hover:bg-white/70 hover:text-[var(--color-primary)]"
+                    disabled={busyTableId === table.id}
+                    onClick={() => void onReserveToggle(table)}
+                    type="button"
+                  >
+                    {table.status === "RESERVED" ? "Liberar" : "Reservar"}
+                  </button>
+                </div>
               ) : null}
-            </button>
+            </article>
           ))}
         </div>
       )}
@@ -259,10 +316,6 @@ function LogoutIcon() {
       <path d="M10 7V5a2 2 0 0 1 2-2h6v18h-6a2 2 0 0 1-2-2v-2M15 12H4m0 0 3-3m-3 3 3 3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
     </svg>
   );
-}
-
-function isTerraceTable(table: Pick<TableItem, "name">) {
-  return (table.name ?? "").toLowerCase().includes("terraza");
 }
 
 function formatCurrency(value: number) {

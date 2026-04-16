@@ -56,6 +56,7 @@ type RestaurantTicketPayload = {
   address: string;
   phone: string;
   ticketMessage?: string | null;
+  ticketWidth?: number | null;
 };
 
 const ESC = 0x1b;
@@ -101,6 +102,18 @@ function padLine(left: string, right: string, width = 32) {
   const safeLeft = left.slice(0, width);
   const gap = Math.max(1, width - safeLeft.length - right.length);
   return `${safeLeft}${" ".repeat(gap)}${right}`;
+}
+
+function getTicketCharsPerLine(ticketWidth?: number | null) {
+  return ticketWidth === 58 ? 32 : 48;
+}
+
+function separator(width: number) {
+  return "=".repeat(width);
+}
+
+function dashedSeparator(width: number) {
+  return "-".repeat(width);
 }
 
 function wrapText(text: string, width = 32) {
@@ -225,39 +238,44 @@ export class ESCPOSBuilder {
   }
 }
 
-export function generateKitchenTicket(order: KitchenOrderPayload): Buffer {
+export function generateKitchenTicket(
+  order: KitchenOrderPayload,
+  restaurant?: Pick<RestaurantTicketPayload, "ticketWidth">
+): Buffer {
   const builder = new ESCPOSBuilder().initialize();
   const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const width = getTicketCharsPerLine(restaurant?.ticketWidth);
+  const lineWidth = Math.max(20, width - 3);
 
-  builder.align("center").bold(true).line("===========================").line("*** NUEVO PEDIDO ***").line("===========================");
+  builder.align("center").bold(true).line(separator(width)).line("*** NUEVO PEDIDO ***").line(separator(width));
   builder.bold(false).align("left");
-  builder.line(padLine(`Mesa: ${order.table.number}`, `Hora: ${formatTime(order.createdAt)}`));
+  builder.line(padLine(`Mesa: ${order.table.number}`, `Hora: ${formatTime(order.createdAt)}`, width));
   builder.line(`Camarero: ${order.waiter?.name ?? "-"}`);
-  builder.line("---------------------------");
+  builder.line(dashedSeparator(width));
 
   for (const item of order.items) {
-    for (const line of wrapText(`x${item.quantity}  ${item.product.name}`)) {
+    for (const line of wrapText(`x${item.quantity}  ${item.product.name}`, width)) {
       builder.line(line);
     }
 
     for (const modification of item.modifications ?? []) {
       const prefix = modification.action === "REMOVED" ? "** SIN " : "++ ";
 
-      for (const line of wrapText(`${prefix}${modification.ingredient.name}`, 29)) {
+      for (const line of wrapText(`${prefix}${modification.ingredient.name}`, lineWidth)) {
         builder.line(`  ${line}`);
       }
     }
 
     if (item.notes?.trim()) {
-      for (const note of wrapText(`>> ${item.notes.trim()}`, 29)) {
+      for (const note of wrapText(`>> ${item.notes.trim()}`, lineWidth)) {
         builder.line(`  ${note}`);
       }
     }
   }
 
-  builder.line("---------------------------");
+  builder.line(dashedSeparator(width));
   builder.bold(true).line(`TOTAL ITEMS: ${totalItems}`).bold(false);
-  builder.align("center").line("===========================");
+  builder.align("center").line(separator(width));
   builder.doubleSize(true).line(`MESA ${order.table.number}`).doubleSize(false);
   builder.newLine(1).cut();
 
@@ -269,6 +287,8 @@ export function generateReceiptTicket(
   restaurant: RestaurantTicketPayload
 ): Buffer {
   const builder = new ESCPOSBuilder().initialize();
+  const width = getTicketCharsPerLine(restaurant.ticketWidth);
+  const itemTextWidth = width === 32 ? 20 : 34;
   const itemRows = bill.orders.flatMap((order) =>
     order.items.map((item) => {
       const unitPrice = decimalToNumber(item.unitPrice) ?? 0;
@@ -288,53 +308,54 @@ export function generateReceiptTicket(
   builder.align("center").bold(true).line(restaurant.name.toUpperCase()).bold(false);
   builder.line(restaurant.address);
   builder.line(`Tel: ${restaurant.phone}`);
-  builder.line("===========================");
+  builder.line(separator(width));
   builder.align("left");
   builder.line(`Ticket: #${bill.id}`);
   builder.line(`Fecha: ${formatDateTime(bill.paidAt)}`);
   builder.line(`Mesa: ${bill.table.number}`);
   builder.line(`Atendido por: ${bill.waiter?.name ?? "-"}`);
-  builder.line("---------------------------");
+  builder.line(dashedSeparator(width));
 
   for (const item of itemRows) {
-    const wrapped = wrapText(`${item.quantity}x ${item.name}`, 20);
+    const wrapped = wrapText(`${item.quantity}x ${item.name}`, itemTextWidth);
 
     wrapped.forEach((line, index) => {
-      builder.line(index === 0 ? padLine(line, formatMoney(item.total)) : line);
+      builder.line(index === 0 ? padLine(line, formatMoney(item.total), width) : line);
     });
   }
 
-  builder.line("---------------------------");
-  builder.line(padLine("Subtotal:", formatMoney(decimalToNumber(bill.subtotal))));
-  builder.line(padLine("IVA (10%):", formatMoney(decimalToNumber(bill.tax))));
-  builder.bold(true).line(padLine("TOTAL:", formatMoney(total))).bold(false);
-  builder.line("---------------------------");
+  builder.line(dashedSeparator(width));
+  builder.line(padLine("Subtotal:", formatMoney(decimalToNumber(bill.subtotal)), width));
+  builder.line(padLine("IVA (10%):", formatMoney(decimalToNumber(bill.tax)), width));
+  builder.bold(true).line(padLine("TOTAL:", formatMoney(total), width)).bold(false);
+  builder.line(dashedSeparator(width));
   builder.line(`Pago: ${bill.paymentMethod}`);
 
   if (cashAmount !== null) {
-    builder.line(padLine("Entregado:", formatMoney(cashAmount)));
+    builder.line(padLine("Entregado:", formatMoney(cashAmount), width));
   }
 
   if (changeAmount !== null) {
-    builder.line(padLine("Cambio:", formatMoney(changeAmount)));
+    builder.line(padLine("Cambio:", formatMoney(changeAmount), width));
   }
 
-  builder.align("center").line("===========================");
+  builder.align("center").line(separator(width));
   builder.line(restaurant.ticketMessage?.trim() || "Gracias por su visita");
-  builder.line("===========================");
+  builder.line(separator(width));
   builder.cut();
 
   return builder.build();
 }
 
 export function generateTestTicket(printer: "kitchen" | "receipt", restaurant: RestaurantTicketPayload): Buffer {
+  const width = getTicketCharsPerLine(restaurant.ticketWidth);
   return new ESCPOSBuilder()
     .initialize()
     .align("center")
     .bold(true)
     .line("TEST DE IMPRESION")
     .bold(false)
-    .line("===========================")
+    .line(separator(width))
     .doubleSize(true)
     .line(printer === "kitchen" ? "COCINA" : "CAJA")
     .doubleSize(false)

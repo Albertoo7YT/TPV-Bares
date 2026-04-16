@@ -33,6 +33,8 @@ type BulkFormState = {
   status: Extract<TableStatus, "FREE" | "RESERVED">;
 };
 
+const CUSTOM_ZONE_VALUE = "__custom__";
+
 export default function TablesAdminPage() {
   const { showToast } = useToast();
   const [tablesResponse, setTablesResponse] = useState<TableListResponse>({
@@ -245,6 +247,39 @@ export default function TablesAdminPage() {
     showToast({ type: "warning", title: "Mesas", message });
   }
 
+  async function handleMoveZone(zoneName: string, direction: "up" | "down") {
+    const currentIndex = tablesResponse.zones.findIndex((zone) => zone.name === zoneName);
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= tablesResponse.zones.length) {
+      return;
+    }
+
+    const nextZones = [...tablesResponse.zones];
+    const [movedZone] = nextZones.splice(currentIndex, 1);
+    if (!movedZone) {
+      return;
+    }
+    nextZones.splice(targetIndex, 0, movedZone);
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const response = await api.patch<TableListResponse>("/tables/zones/order", {
+        zones: nextZones.map((zone) => zone.name)
+      });
+      setTablesResponse(response);
+      showToast({ type: "success", title: "Mesas", message: "Orden de zonas actualizado" });
+    } catch (moveError) {
+      const message = moveError instanceof Error ? moveError.message : "No se pudo reordenar la zona";
+      setError(message);
+      showToast({ type: "error", title: "Mesas", message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <section className="space-y-6 page-enter">
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -310,6 +345,24 @@ export default function TablesAdminPage() {
                   </p>
                 </div>
                 <div className="h-px flex-1 bg-[var(--color-border)]" />
+                <div className="flex items-center gap-2">
+                  <button
+                    className="btn-ghost min-h-11 px-3 py-2 text-sm disabled:opacity-40"
+                    disabled={saving || tablesResponse.zones[0]?.name === zone.name}
+                    onClick={() => void handleMoveZone(zone.name, "up")}
+                    type="button"
+                  >
+                    Subir
+                  </button>
+                  <button
+                    className="btn-ghost min-h-11 px-3 py-2 text-sm disabled:opacity-40"
+                    disabled={saving || tablesResponse.zones[tablesResponse.zones.length - 1]?.name === zone.name}
+                    onClick={() => void handleMoveZone(zone.name, "down")}
+                    type="button"
+                  >
+                    Bajar
+                  </button>
+                </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -418,24 +471,51 @@ export default function TablesAdminPage() {
             </Field>
 
             <Field label="Zona" required>
-              <input
-                className="field-input"
-                list="table-zone-options"
-                onChange={(event) =>
-                  setTableModal((current) =>
-                    current ? { ...current, zone: event.target.value } : current
-                  )
-                }
-                value={tableModal.zone}
-              />
+              <div className="space-y-3">
+                <select
+                  className="field-input"
+                  onChange={(event) =>
+                    setTableModal((current) =>
+                      current
+                        ? {
+                            ...current,
+                            zone:
+                              event.target.value === CUSTOM_ZONE_VALUE
+                                ? ""
+                                : event.target.value
+                          }
+                        : current
+                    )
+                  }
+                  value={getZoneSelectValue(tableModal.zone, zoneOptions)}
+                >
+                  {zoneOptions.map((zone) => (
+                    <option key={zone} value={zone}>
+                      {zone}
+                    </option>
+                  ))}
+                  <option value={CUSTOM_ZONE_VALUE}>Nueva zona...</option>
+                </select>
+
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Elige una zona existente o selecciona &quot;Nueva zona...&quot; para crear una como Terraza, Salon o Barra.
+                </p>
+
+                {isCustomZone(tableModal.zone, zoneOptions) ? (
+                  <input
+                    className="field-input"
+                    onChange={(event) =>
+                      setTableModal((current) =>
+                        current ? { ...current, zone: event.target.value } : current
+                      )
+                    }
+                    placeholder="Escribe la nueva zona"
+                    value={tableModal.zone}
+                  />
+                ) : null}
+              </div>
             </Field>
           </div>
-
-          <datalist id="table-zone-options">
-            {zoneOptions.map((zone) => (
-              <option key={zone} value={zone} />
-            ))}
-          </datalist>
 
           <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button className="btn-secondary min-h-11 px-4 py-2.5 text-sm font-medium" onClick={() => setTableModal(null)} type="button">
@@ -513,24 +593,51 @@ export default function TablesAdminPage() {
             </Field>
 
             <Field label="Zona" required>
-              <input
-                className="field-input"
-                list="bulk-zone-options"
-                onChange={(event) =>
-                  setBulkModal((current) =>
-                    current ? { ...current, zone: event.target.value } : current
-                  )
-                }
-                value={bulkModal.zone}
-              />
+              <div className="space-y-3">
+                <select
+                  className="field-input"
+                  onChange={(event) =>
+                    setBulkModal((current) =>
+                      current
+                        ? {
+                            ...current,
+                            zone:
+                              event.target.value === CUSTOM_ZONE_VALUE
+                                ? ""
+                                : event.target.value
+                          }
+                        : current
+                    )
+                  }
+                  value={getZoneSelectValue(bulkModal.zone, zoneOptions)}
+                >
+                  {zoneOptions.map((zone) => (
+                    <option key={zone} value={zone}>
+                      {zone}
+                    </option>
+                  ))}
+                  <option value={CUSTOM_ZONE_VALUE}>Nueva zona...</option>
+                </select>
+
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Puedes crear varias mesas en una zona nueva escribiendo su nombre debajo.
+                </p>
+
+                {isCustomZone(bulkModal.zone, zoneOptions) ? (
+                  <input
+                    className="field-input"
+                    onChange={(event) =>
+                      setBulkModal((current) =>
+                        current ? { ...current, zone: event.target.value } : current
+                      )
+                    }
+                    placeholder="Escribe la nueva zona"
+                    value={bulkModal.zone}
+                  />
+                ) : null}
+              </div>
             </Field>
           </div>
-
-          <datalist id="bulk-zone-options">
-            {zoneOptions.map((zone) => (
-              <option key={zone} value={zone} />
-            ))}
-          </datalist>
 
           <div className="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-4 py-3 text-sm text-[var(--color-text)]">
             {buildBulkPreview(bulkModal)}
@@ -638,6 +745,19 @@ function getTableStatusLabel(status: TableStatus) {
   }
 
   return "Ocupada";
+}
+
+function getZoneSelectValue(zone: string, options: string[]) {
+  const normalizedZone = zone.trim();
+  if (!normalizedZone) {
+    return CUSTOM_ZONE_VALUE;
+  }
+
+  return options.includes(normalizedZone) ? normalizedZone : CUSTOM_ZONE_VALUE;
+}
+
+function isCustomZone(zone: string, options: string[]) {
+  return getZoneSelectValue(zone, options) === CUSTOM_ZONE_VALUE;
 }
 
 function buildBulkPreview(form: BulkFormState) {

@@ -13,6 +13,7 @@ import DeviceLoginPage from "./pages/DeviceLoginPage";
 import ProductsAdminPage from "./pages/admin/ProductsAdminPage";
 import DevicesAdminPage from "./pages/admin/DevicesAdminPage";
 import IngredientsPage from "./pages/admin/IngredientsPage";
+import PrintersPage from "./pages/admin/PrintersPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import SettingsPage from "./pages/admin/SettingsPage";
 import TablesAdminPage from "./pages/admin/TablesAdminPage";
@@ -83,6 +84,7 @@ function AppRoutes() {
             <Route element={<ProductsAdminPage />} path="/admin/products" />
             <Route element={<DevicesAdminPage />} path="/admin/devices" />
             <Route element={<IngredientsPage />} path="/admin/ingredients" />
+            <Route element={<PrintersPage />} path="/admin/printers" />
             <Route element={<ReportsPage />} path="/admin/reports" />
             <Route element={<SettingsPage />} path="/admin/settings" />
             <Route element={<TablesAdminPage />} path="/admin/tables" />

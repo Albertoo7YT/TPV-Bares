@@ -73,6 +73,8 @@ model Restaurant {
   autoPrintReceipt Boolean     @default(true)
   printModifications Boolean   @default(true)
   kitchenCopies Int            @default(1)
+  ticketWidth Int              @default(80)
+  tableZoneOrder String[]      @default([])
   createdAt     DateTime       @default(now())
   users         User[]
   categories    Category[]

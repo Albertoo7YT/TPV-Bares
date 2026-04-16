@@ -1,0 +1,2 @@
+ALTER TABLE "Restaurant"
+ADD COLUMN "ticketWidth" INTEGER NOT NULL DEFAULT 80;

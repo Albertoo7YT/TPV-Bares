@@ -453,7 +453,7 @@ export async function createOrder(input: CreateOrderInput, user: AuthenticatedUs
       }
     } as never);
 
-    if (table.status === "FREE") {
+    if (table.status !== "OCCUPIED") {
       await tx.table.update({
         where: {
           id: tableId
@@ -474,7 +474,7 @@ export async function createOrder(input: CreateOrderInput, user: AuthenticatedUs
     console.error("Kitchen relay print failed for new order", error);
   });
 
-  if (table.status === "FREE") {
+  if (table.status !== "OCCUPIED") {
     emitToRestaurant("table:statusChanged", user.restaurantId, {
       tableId,
       status: "OCCUPIED"

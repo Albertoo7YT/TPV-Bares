@@ -436,7 +436,6 @@ export default function OrderPage() {
     }
 
     setCustomizationModal(null);
-    setCurrentTab("Pedido actual");
     setHighlightedProductId(customizationModal.product.id);
     window.setTimeout(() => setHighlightedProductId(null), 220);
   }
@@ -548,7 +547,6 @@ export default function OrderPage() {
     setEditingOrderId(order.id);
     setEditingSnapshot(nextCart);
     setCart(nextCart);
-    setCurrentTab("Pedido actual");
     setError(null);
   }
 
@@ -767,7 +765,7 @@ export default function OrderPage() {
               <span className="mono text-2xl text-[var(--color-text)]">{formatCurrency(total)}</span>
             </div>
             <button aria-label="Enviar pedido actual" className="btn-primary w-full px-5 py-4 text-base font-medium" disabled={!cart.length || sending} onClick={handleSendOrder} type="button">
-              {sending ? <Spinner className="h-5 w-5" label={editingOrderId ? "Guardando..." : "Enviando..."} /> : editingOrderId ? "Guardar cambios" : "Enviar pedido"}
+              {sending ? <Spinner className="h-5 w-5" label={editingOrderId ? "Guardando..." : "Enviando..."} /> : editingOrderId ? "Guardar cambios" : "Enviar a cocina"}
             </button>
           </div>
         </div>

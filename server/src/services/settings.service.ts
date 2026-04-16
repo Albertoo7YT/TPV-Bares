@@ -23,6 +23,7 @@ type SettingsInput = {
   autoPrintReceipt?: unknown;
   printModifications?: unknown;
   kitchenCopies?: unknown;
+  ticketWidth?: unknown;
 };
 
 type ResetInput = {
@@ -56,6 +57,7 @@ type RestaurantSettingsRecord = {
   autoPrintReceipt?: boolean;
   printModifications?: boolean;
   kitchenCopies?: number;
+  ticketWidth?: number;
   email?: string;
   passwordHash?: string;
   createdAt: Date;
@@ -188,7 +190,8 @@ function mapRestaurantSettings(
     autoPrintKitchen: restaurant.autoPrintKitchen ?? true,
     autoPrintReceipt: restaurant.autoPrintReceipt ?? true,
     printModifications: restaurant.printModifications ?? true,
-    kitchenCopies: restaurant.kitchenCopies ?? 1
+    kitchenCopies: restaurant.kitchenCopies ?? 1,
+    ticketWidth: restaurant.ticketWidth ?? 80
   };
 }
 
@@ -260,6 +263,7 @@ export async function updateSettings(input: SettingsInput, user: AuthenticatedUs
     autoPrintReceipt?: boolean;
     printModifications?: boolean;
     kitchenCopies?: number;
+    ticketWidth?: number;
   } = {};
 
   if (input.name !== undefined) data.name = normalizeRequiredString(input.name, "name");
@@ -317,6 +321,13 @@ export async function updateSettings(input: SettingsInput, user: AuthenticatedUs
 
     if (data.kitchenCopies && ![1, 2].includes(data.kitchenCopies)) {
       throw createHttpError(400, "kitchenCopies must be 1 or 2");
+    }
+  }
+  if (input.ticketWidth !== undefined) {
+    data.ticketWidth = normalizeOptionalInteger(input.ticketWidth, "ticketWidth");
+
+    if (data.ticketWidth && ![58, 80].includes(data.ticketWidth)) {
+      throw createHttpError(400, "ticketWidth must be 58 or 80");
     }
   }
 

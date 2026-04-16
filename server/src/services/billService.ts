@@ -41,7 +41,7 @@ function normalizeId(value: unknown, fieldName: string) {
 
 function normalizePaymentMethod(value: unknown): PaymentMethod {
   if (typeof value !== "string" || !["CASH", "CARD", "MIXED"].includes(value)) {
-    throw createHttpError(400, "Invalid payment method");
+    throw createHttpError(400, "Metodo de pago no valido");
   }
 
   return value as PaymentMethod;
@@ -348,27 +348,27 @@ export async function createBill(input: CreateBillInput, user: AuthenticatedUser
   const orders = await getBillableOrders(tableId, user.restaurantId);
 
   if (orders.length === 0) {
-    throw createHttpError(400, "There are no active orders to bill for this table");
+    throw createHttpError(400, "No hay pedidos activos para cobrar en esta mesa");
   }
 
   const previewItems = buildPreviewItems(orders);
   const totals = buildTotals(previewItems);
 
   if (paymentMethod === "CASH" && cashAmount === null) {
-    throw createHttpError(400, "cashAmount is required for CASH payment");
+    throw createHttpError(400, "Introduce la cantidad recibida en efectivo");
   }
 
   if (paymentMethod === "CARD" && cardAmount === null) {
-    throw createHttpError(400, "cardAmount is required for CARD payment");
+    throw createHttpError(400, "Introduce el importe cobrado con tarjeta");
   }
 
   if (paymentMethod === "MIXED") {
     if (cashAmount === null || cardAmount === null) {
-      throw createHttpError(400, "cashAmount and cardAmount are required for MIXED payment");
+      throw createHttpError(400, "Introduce los importes de efectivo y tarjeta");
     }
 
     if (roundAmount(cashAmount + cardAmount) < totals.total) {
-      throw createHttpError(400, "cashAmount + cardAmount must be greater than or equal to total");
+      throw createHttpError(400, "La suma de efectivo y tarjeta debe cubrir el total");
     }
   }
 

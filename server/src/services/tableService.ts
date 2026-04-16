@@ -20,6 +20,10 @@ type BulkTableInput = {
   status?: unknown;
 };
 
+type ZoneOrderInput = {
+  zones?: unknown;
+};
+
 const ACTIVE_ORDER_STATUSES = ["ACTIVE"] as const;
 const TABLE_STATUSES = ["FREE", "OCCUPIED", "RESERVED"] as const;
 
@@ -80,6 +84,35 @@ function normalizeStatus(value: unknown) {
   return value as TableStatus;
 }
 
+function normalizeZoneOrder(value: unknown) {
+  if (!Array.isArray(value)) {
+    throw createHttpError(400, "zones must be an array");
+  }
+
+  const normalizedZones = value
+    .map((zone) => normalizeZone(zone))
+    .filter((zone, index, zones) => zones.indexOf(zone) === index);
+
+  return normalizedZones;
+}
+
+function buildZoneOrderLookup(zoneOrder: string[]) {
+  return new Map(zoneOrder.map((zone, index) => [zone, index]));
+}
+
+function compareZones(left: string, right: string, zoneOrderLookup: Map<string, number>) {
+  const leftOrder = zoneOrderLookup.get(left);
+  const rightOrder = zoneOrderLookup.get(right);
+
+  if (leftOrder !== undefined || rightOrder !== undefined) {
+    if (leftOrder === undefined) return 1;
+    if (rightOrder === undefined) return -1;
+    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+  }
+
+  return left.localeCompare(right, "es");
+}
+
 async function ensureTableBelongsToRestaurant(restaurantId: string, tableId: string) {
   const table = await prisma.table.findFirst({
     where: {
@@ -121,12 +154,10 @@ async function ensureTableNumberAvailable(
 
 function getPartialTotal(
   orders: Array<{
-    status: string;
     items: Array<{ quantity: number; unitPrice: { toNumber(): number } }>;
   }>
 ) {
   const total = orders
-    .filter((order) => order.status !== "CANCELLED")
     .reduce((sum, order) => {
       const orderTotal = order.items.reduce(
         (itemsSum, item) => itemsSum + item.quantity * item.unitPrice.toNumber(),
@@ -181,7 +212,7 @@ function mapTableSummary(table: {
       table.status === "OCCUPIED"
         ? {
             activeOrdersCount,
-            partialTotal: getPartialTotal(table.orders),
+            partialTotal: getPartialTotal(activeOrders),
             occupiedSince: firstActiveOrder?.createdAt?.toISOString() ?? null,
             openedBy: firstActiveOrder?.waiter
               ? {
@@ -195,39 +226,47 @@ function mapTableSummary(table: {
 }
 
 export async function listTablesWithStatus(restaurantId: string) {
-  const tables = (await prisma.table.findMany({
+  const restaurant = await prisma.restaurant.findUniqueOrThrow({
     where: {
-      restaurantId
+      id: restaurantId
     },
-    orderBy: {
-      number: "asc"
-    },
-    include: {
-      orders: {
-        where: {
-          status: {
-            not: "CANCELLED"
-          }
+    select: {
+      tableZoneOrder: true,
+      tables: {
+        orderBy: {
+          number: "asc"
         },
-        select: {
-          createdAt: true,
-          status: true,
-          waiter: {
+        include: {
+          orders: {
+            where: {
+              status: {
+                not: "CANCELLED"
+              },
+              billId: null
+            },
             select: {
-              id: true,
-              name: true
-            }
-          },
-          items: {
-            select: {
-              quantity: true,
-              unitPrice: true
+              createdAt: true,
+              status: true,
+              waiter: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              },
+              items: {
+                select: {
+                  quantity: true,
+                  unitPrice: true
+                }
+              }
             }
           }
         }
       }
     }
-  })) as Array<{
+  });
+
+  const tables = restaurant.tables as Array<{
     id: string;
     number: number;
     name: string | null;
@@ -245,9 +284,10 @@ export async function listTablesWithStatus(restaurantId: string) {
       items: Array<{ quantity: number; unitPrice: { toNumber(): number } }>;
     }>;
   }>;
+  const zoneOrderLookup = buildZoneOrderLookup(restaurant.tableZoneOrder ?? []);
 
   const flatTables = tables.map(mapTableSummary).sort((left, right) => {
-    const zoneComparison = left.zone.localeCompare(right.zone);
+    const zoneComparison = compareZones(left.zone, right.zone, zoneOrderLookup);
     if (zoneComparison !== 0) {
       return zoneComparison;
     }
@@ -264,11 +304,13 @@ export async function listTablesWithStatus(restaurantId: string) {
 
   return {
     tables: flatTables,
-    zones: Array.from(zonesMap.entries()).map(([name, zoneTables]) => ({
-      name,
-      count: zoneTables.length,
-      tables: zoneTables.sort((left, right) => left.number - right.number)
-    }))
+    zones: Array.from(zonesMap.entries())
+      .sort(([left], [right]) => compareZones(left, right, zoneOrderLookup))
+      .map(([name, zoneTables]) => ({
+        name,
+        count: zoneTables.length,
+        tables: zoneTables.sort((left, right) => left.number - right.number)
+      }))
   };
 }
 
@@ -409,18 +451,24 @@ export async function updateTableStatus(
   await ensureTableBelongsToRestaurant(restaurantId, tableId);
   const nextStatus = normalizeStatus(nextStatusValue);
 
-  if (nextStatus === "FREE") {
-    const pendingOrdersCount = await prisma.order.count({
+  if (nextStatus === "FREE" || nextStatus === "RESERVED") {
+    const activeOpenOrdersCount = await prisma.order.count({
       where: {
         tableId,
         status: {
           in: [...ACTIVE_ORDER_STATUSES] as never
-        }
+        },
+        billId: null
       }
     });
 
-    if (pendingOrdersCount > 0) {
-      throw createHttpError(400, "Cannot set table to FREE while it has active orders");
+    if (activeOpenOrdersCount > 0) {
+      throw createHttpError(
+        400,
+        nextStatus === "FREE"
+          ? "Cannot set table to FREE while it has active orders"
+          : "Cannot reserve a table while it has active orders"
+      );
     }
   }
 
@@ -439,4 +487,35 @@ export async function updateTableStatus(
   });
 
   return updatedTable;
+}
+
+export async function updateTableZoneOrder(restaurantId: string, input: ZoneOrderInput) {
+  const zones = normalizeZoneOrder(input.zones);
+
+  const existingZones = await prisma.table.findMany({
+    where: {
+      restaurantId
+    },
+    select: {
+      zone: true
+    },
+    distinct: ["zone"]
+  });
+
+  const existingZoneNames = existingZones.map((table) => table.zone);
+  const nextZoneOrder = [
+    ...zones.filter((zone) => existingZoneNames.includes(zone)),
+    ...existingZoneNames.filter((zone) => !zones.includes(zone)).sort((left, right) => left.localeCompare(right, "es"))
+  ];
+
+  await prisma.restaurant.update({
+    where: {
+      id: restaurantId
+    },
+    data: {
+      tableZoneOrder: nextZoneOrder
+    }
+  });
+
+  return listTablesWithStatus(restaurantId);
 }

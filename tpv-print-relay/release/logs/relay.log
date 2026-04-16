@@ -1,0 +1,53 @@
+[2026-04-16T11:40:28.570Z] [INFO] Panel web resuelto para runtime actual. {"packaged":true,"panelDir":"C:\\snapshot\\tpv-print-relay\\panel"}
+[2026-04-16T11:40:28.590Z] [WARN] No se pudo iniciar node-systray. El relay seguira sin icono de bandeja. {"error":"Cannot find module 'node-systray'\nRequire stack:\n- C:\\snapshot\\tpv-print-relay\\dist\\tray.js\n- C:\\snapshot\\tpv-print-relay\\dist\\index.js\n1) If you want to compile the package/file into executable, please pay attention to compilation warnings and specify a literal in 'require' call. 2) If you don't want to compile the package/file into executable and want to 'require' it from filesystem (likely plugin), specify an absolute path in 'require' call using process.cwd() or process.execPath."}
+[2026-04-16T11:40:28.591Z] [INFO] TPV Print Relay v1.0 iniciado
+[2026-04-16T11:40:28.592Z] [WARN] Relay iniciado sin serverUrl configurada.
+[2026-04-16T11:40:28.593Z] [WARN] El relay sigue operativo, pero sin icono de bandeja.
+[2026-04-16T11:40:28.596Z] [INFO] Panel local disponible en http://127.0.0.1:9191
+[2026-04-16T11:55:06.258Z] [INFO] Panel web resuelto para runtime actual. {"packaged":true,"panelDir":"C:\\TPV Bares\\tpv-print-relay\\release\\panel"}
+[2026-04-16T11:55:06.274Z] [WARN] No se pudo iniciar node-systray. El relay seguira sin icono de bandeja. {"error":"Cannot find module 'node-systray'\nRequire stack:\n- C:\\snapshot\\tpv-print-relay\\dist\\tray.js\n- C:\\snapshot\\tpv-print-relay\\dist\\index.js\n1) If you want to compile the package/file into executable, please pay attention to compilation warnings and specify a literal in 'require' call. 2) If you don't want to compile the package/file into executable and want to 'require' it from filesystem (likely plugin), specify an absolute path in 'require' call using process.cwd() or process.execPath."}
+[2026-04-16T11:55:06.274Z] [INFO] TPV Print Relay v1.0 iniciado
+[2026-04-16T11:55:06.275Z] [WARN] Relay iniciado sin serverUrl configurada.
+[2026-04-16T11:55:06.275Z] [WARN] El relay sigue operativo, pero sin icono de bandeja.
+[2026-04-16T11:55:06.278Z] [INFO] Panel local disponible en http://127.0.0.1:9191
+[2026-04-16T12:00:19.464Z] [INFO] Reiniciando conexion WebSocket manualmente.
+[2026-04-16T12:00:19.485Z] [INFO] Configuracion de conexion actualizada desde el panel.
+[2026-04-16T12:00:38.278Z] [INFO] Reiniciando conexion WebSocket manualmente.
+[2026-04-16T12:00:38.290Z] [INFO] Configuracion de conexion actualizada desde el panel.
+[2026-04-16T12:00:58.290Z] [ERROR] Fallo de conexion WebSocket. {"message":"timeout"}
+[2026-04-16T12:00:58.292Z] [INFO] Programando reconexion WebSocket. {"attempt":1,"delayMs":5000}
+[2026-04-16T12:01:03.294Z] [INFO] Intentando reconectar WebSocket. {"attempt":1}
+[2026-04-16T12:01:23.308Z] [ERROR] Fallo de conexion WebSocket. {"message":"timeout"}
+[2026-04-16T12:01:23.309Z] [INFO] Programando reconexion WebSocket. {"attempt":2,"delayMs":10000}
+[2026-04-16T12:01:33.315Z] [INFO] Intentando reconectar WebSocket. {"attempt":2}
+[2026-04-16T12:01:53.329Z] [ERROR] Fallo de conexion WebSocket. {"message":"timeout"}
+[2026-04-16T12:01:53.331Z] [INFO] Programando reconexion WebSocket. {"attempt":3,"delayMs":20000}
+[2026-04-16T12:02:09.775Z] [INFO] Enviando bytes raw a impresora. {"type":"network","bytes":157}
+[2026-04-16T12:02:09.776Z] [ERROR] Fallo en test de impresion. {"printerType":"kitchen","error":"networkIp no configurada"}
+[2026-04-16T12:02:13.336Z] [INFO] Intentando reconectar WebSocket. {"attempt":3}
+[2026-04-16T12:02:33.351Z] [ERROR] Fallo de conexion WebSocket. {"message":"timeout"}
+[2026-04-16T12:02:33.352Z] [INFO] Programando reconexion WebSocket. {"attempt":4,"delayMs":40000}
+[2026-04-16T12:03:13.359Z] [INFO] Intentando reconectar WebSocket. {"attempt":4}
+[2026-04-16T12:03:33.372Z] [ERROR] Fallo de conexion WebSocket. {"message":"timeout"}
+[2026-04-16T12:03:33.373Z] [INFO] Programando reconexion WebSocket. {"attempt":5,"delayMs":60000}
+[2026-04-16T12:04:33.375Z] [INFO] Intentando reconectar WebSocket. {"attempt":5}
+[2026-04-16T12:04:53.387Z] [ERROR] Fallo de conexion WebSocket. {"message":"timeout"}
+[2026-04-16T12:04:53.389Z] [INFO] Programando reconexion WebSocket. {"attempt":6,"delayMs":60000}
+[2026-04-16T12:05:53.401Z] [INFO] Intentando reconectar WebSocket. {"attempt":6}
+[2026-04-16T12:06:13.421Z] [ERROR] Fallo de conexion WebSocket. {"message":"timeout"}
+[2026-04-16T12:06:13.422Z] [INFO] Programando reconexion WebSocket. {"attempt":7,"delayMs":60000}
+[2026-04-16T12:07:13.437Z] [INFO] Intentando reconectar WebSocket. {"attempt":7}
+[2026-04-16T12:07:33.462Z] [ERROR] Fallo de conexion WebSocket. {"message":"timeout"}
+[2026-04-16T12:07:33.463Z] [INFO] Programando reconexion WebSocket. {"attempt":8,"delayMs":60000}
+[2026-04-16T12:08:33.479Z] [INFO] Intentando reconectar WebSocket. {"attempt":8}
+[2026-04-16T12:08:53.493Z] [ERROR] Fallo de conexion WebSocket. {"message":"timeout"}
+[2026-04-16T12:08:53.494Z] [INFO] Programando reconexion WebSocket. {"attempt":9,"delayMs":60000}
+[2026-04-16T12:09:53.508Z] [INFO] Intentando reconectar WebSocket. {"attempt":9}
+[2026-04-16T12:10:13.528Z] [ERROR] Fallo de conexion WebSocket. {"message":"timeout"}
+[2026-04-16T12:10:13.529Z] [INFO] Programando reconexion WebSocket. {"attempt":10,"delayMs":60000}
+[2026-04-16T12:11:13.543Z] [INFO] Intentando reconectar WebSocket. {"attempt":10}
+[2026-04-16T12:11:33.563Z] [ERROR] Fallo de conexion WebSocket. {"message":"timeout"}
+[2026-04-16T12:11:33.564Z] [INFO] Programando reconexion WebSocket. {"attempt":11,"delayMs":60000}
+[2026-04-16T12:12:33.568Z] [INFO] Intentando reconectar WebSocket. {"attempt":11}
+[2026-04-16T12:12:53.204Z] [ERROR] Fallo de conexion WebSocket. {"message":"websocket error"}
+[2026-04-16T12:12:53.206Z] [INFO] Programando reconexion WebSocket. {"attempt":12,"delayMs":60000}

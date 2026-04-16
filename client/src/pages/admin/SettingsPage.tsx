@@ -29,24 +29,13 @@ type SettingsResponse = {
   kitchenCopies: number;
 };
 
-type RelayStatusResponse = {
-  connected: boolean;
-  connectedAt: string | null;
-  deviceName: string | null;
-  deviceIp: string | null;
-  uptimeMs: number | null;
-  lastError: string | null;
-  printers: {
-    kitchen: "ok" | "error" | "disabled";
-    receipt: "ok" | "error" | "disabled";
-  };
-};
-
 type FormState = Omit<SettingsResponse, "id" | "ticketMessage"> & {
   ticketMessage: string;
 };
 
-type FormErrors = Partial<Record<"name" | "address" | "phone" | "taxRate" | "kitchenAlertMinutes" | "logo", string>>;
+type FormErrors = Partial<
+  Record<"name" | "address" | "phone" | "taxRate" | "kitchenAlertMinutes" | "logo", string>
+>;
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 
@@ -83,8 +72,6 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false);
   const [resetConfirmation, setResetConfirmation] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
-  const [relayStatus, setRelayStatus] = useState<RelayStatusResponse | null>(null);
-  const [relayAction, setRelayAction] = useState<"token" | "kitchen" | "receipt" | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,34 +107,6 @@ export default function SettingsPage() {
       cancelled = true;
     };
   }, [showToast]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadRelayStatus() {
-      try {
-        const status = await api.get<RelayStatusResponse>("/relay/status");
-
-        if (!cancelled) {
-          setRelayStatus(status);
-        }
-      } catch {
-        if (!cancelled) {
-          setRelayStatus(null);
-        }
-      }
-    }
-
-    void loadRelayStatus();
-    const interval = window.setInterval(() => {
-      void loadRelayStatus();
-    }, 10000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, []);
 
   const expectedPreview = useMemo(() => {
     return {
@@ -330,78 +289,6 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleRegenerateRelayToken() {
-    setRelayAction("token");
-
-    try {
-      const updated = await api.post<SettingsResponse>("/settings/relay-token/regenerate");
-      setForm({
-        ...updated,
-        ticketMessage: updated.ticketMessage ?? ""
-      });
-      showToast({
-        type: "success",
-        title: "Print Relay",
-        message: "Se ha generado un nuevo token. El relay actual tendra que reconectarse."
-      });
-    } catch (error) {
-      showToast({
-        type: "error",
-        title: "Print Relay",
-        message: error instanceof Error ? error.message : "No se pudo regenerar el token"
-      });
-    } finally {
-      setRelayAction(null);
-    }
-  }
-
-  async function handleCopyRelayToken() {
-    if (!form.relayToken) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(form.relayToken);
-      showToast({
-        type: "success",
-        title: "Print Relay",
-        message: "Token copiado al portapapeles"
-      });
-    } catch (error) {
-      showToast({
-        type: "error",
-        title: "Print Relay",
-        message: error instanceof Error ? error.message : "No se pudo copiar el token"
-      });
-    }
-  }
-
-  async function handleRelayTest(printer: "kitchen" | "receipt") {
-    setRelayAction(printer);
-
-    try {
-      await api.post(`/relay/test/${printer}`);
-      const status = await api.get<RelayStatusResponse>("/relay/status");
-      setRelayStatus(status);
-      showToast({
-        type: "success",
-        title: "Print Relay",
-        message:
-          printer === "kitchen"
-            ? "Test de cocina enviado al relay"
-            : "Test de caja enviado al relay"
-      });
-    } catch (error) {
-      showToast({
-        type: "error",
-        title: "Print Relay",
-        message: error instanceof Error ? error.message : "No se pudo enviar el test"
-      });
-    } finally {
-      setRelayAction(null);
-    }
-  }
-
   if (loading) {
     return (
       <section className="space-y-6 page-enter">
@@ -510,34 +397,16 @@ export default function SettingsPage() {
 
           <div className="grid gap-4">
             <Field error={errors.name} label="Nombre del restaurante" required>
-              <input
-                className={getFieldClass(Boolean(errors.name))}
-                onChange={(event) => updateField("name", event.target.value)}
-                value={form.name}
-              />
+              <input className={getFieldClass(Boolean(errors.name))} onChange={(event) => updateField("name", event.target.value)} value={form.name} />
             </Field>
             <Field error={errors.address} label="Direccion" required>
-              <input
-                className={getFieldClass(Boolean(errors.address))}
-                onChange={(event) => updateField("address", event.target.value)}
-                value={form.address}
-              />
+              <input className={getFieldClass(Boolean(errors.address))} onChange={(event) => updateField("address", event.target.value)} value={form.address} />
             </Field>
             <Field error={errors.phone} label="Telefono" required>
-              <input
-                className={getFieldClass(Boolean(errors.phone))}
-                onChange={(event) => updateField("phone", event.target.value)}
-                type="tel"
-                value={form.phone}
-              />
+              <input className={getFieldClass(Boolean(errors.phone))} onChange={(event) => updateField("phone", event.target.value)} type="tel" value={form.phone} />
             </Field>
             <Field label="Mensaje para tickets">
-              <textarea
-                className={getFieldClass(false, "min-h-28")}
-                onChange={(event) => updateField("ticketMessage", event.target.value)}
-                placeholder="¡Gracias por tu visita!"
-                value={form.ticketMessage}
-              />
+              <textarea className={getFieldClass(false, "min-h-28")} onChange={(event) => updateField("ticketMessage", event.target.value)} placeholder="¡Gracias por tu visita!" value={form.ticketMessage} />
             </Field>
           </div>
         </div>
@@ -552,22 +421,10 @@ export default function SettingsPage() {
 
           <div className="mt-5 grid gap-4">
             <Field error={errors.taxRate} label="Tipo de IVA (%)">
-              <input
-                className={getFieldClass(Boolean(errors.taxRate))}
-                min="0"
-                onChange={(event) => updateField("taxRate", Number(event.target.value))}
-                step="0.01"
-                type="number"
-                value={form.taxRate}
-              />
+              <input className={getFieldClass(Boolean(errors.taxRate))} min="0" onChange={(event) => updateField("taxRate", Number(event.target.value))} step="0.01" type="number" value={form.taxRate} />
             </Field>
 
-            <ToggleRow
-              checked={form.taxIncluded}
-              description={expectedPreview.ivaText}
-              label="IVA incluido en precios"
-              onChange={() => updateField("taxIncluded", !form.taxIncluded)}
-            />
+            <ToggleRow checked={form.taxIncluded} description={expectedPreview.ivaText} label="IVA incluido en precios" onChange={() => updateField("taxIncluded", !form.taxIncluded)} />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Moneda">
@@ -586,11 +443,7 @@ export default function SettingsPage() {
                 </select>
               </Field>
               <Field label="Simbolo">
-                <input
-                  className={getFieldClass(false)}
-                  onChange={(event) => updateField("currencySymbol", event.target.value)}
-                  value={form.currencySymbol}
-                />
+                <input className={getFieldClass(false)} onChange={(event) => updateField("currencySymbol", event.target.value)} value={form.currencySymbol} />
               </Field>
             </div>
           </div>
@@ -605,20 +458,10 @@ export default function SettingsPage() {
           <div className="mt-5 grid gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Hora de apertura">
-                <input
-                  className={getFieldClass(false)}
-                  onChange={(event) => updateField("openingTime", event.target.value)}
-                  type="time"
-                  value={form.openingTime}
-                />
+                <input className={getFieldClass(false)} onChange={(event) => updateField("openingTime", event.target.value)} type="time" value={form.openingTime} />
               </Field>
               <Field label="Hora de cierre">
-                <input
-                  className={getFieldClass(false)}
-                  onChange={(event) => updateField("closingTime", event.target.value)}
-                  type="time"
-                  value={form.closingTime}
-                />
+                <input className={getFieldClass(false)} onChange={(event) => updateField("closingTime", event.target.value)} type="time" value={form.closingTime} />
               </Field>
             </div>
 
@@ -626,159 +469,15 @@ export default function SettingsPage() {
               <input
                 className={getFieldClass(Boolean(errors.kitchenAlertMinutes))}
                 min="1"
-                onChange={(event) =>
-                  updateField("kitchenAlertMinutes", Number.parseInt(event.target.value, 10) || 0)
-                }
+                onChange={(event) => updateField("kitchenAlertMinutes", Number.parseInt(event.target.value, 10) || 0)}
                 type="number"
                 value={form.kitchenAlertMinutes}
               />
             </Field>
 
-            <ToggleRow
-              checked={form.allowTakeaway}
-              description="Permite crear pedidos para llevar o sin mesa asignada."
-              label="Permitir pedidos sin mesa"
-              onChange={() => updateField("allowTakeaway", !form.allowTakeaway)}
-            />
+            <ToggleRow checked={form.allowTakeaway} description="Permite crear pedidos para llevar o sin mesa asignada." label="Permitir pedidos sin mesa" onChange={() => updateField("allowTakeaway", !form.allowTakeaway)} />
 
-            <ToggleRow
-              checked={form.notificationSounds}
-              description={`Horario operativo configurado: ${expectedPreview.schedule}`}
-              label="Sonidos de notificacion"
-              onChange={() => updateField("notificationSounds", !form.notificationSounds)}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="surface-card p-5 md:p-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-[var(--color-text)]">Impresoras</h2>
-            <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-              Configura el Print Relay y controla el estado de cocina y caja.
-            </p>
-          </div>
-          <div
-            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${
-              relayStatus?.connected
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-red-50 text-red-700"
-            }`}
-          >
-            <span
-              className={`h-2.5 w-2.5 rounded-full ${
-                relayStatus?.connected ? "animate-pulse bg-emerald-500" : "bg-red-500"
-              }`}
-            />
-            {relayStatus?.connected ? "Print Relay conectado" : "Print Relay desconectado"}
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4">
-              <p className="text-sm font-medium text-[var(--color-text)]">Estado del relay</p>
-              {relayStatus?.connected ? (
-                <div className="mt-3 grid gap-2 text-sm text-[var(--color-text-muted)] sm:grid-cols-2">
-                  <p>Dispositivo: <span className="font-medium text-[var(--color-text)]">{relayStatus.deviceName ?? "Sin nombre"}</span></p>
-                  <p>IP: <span className="font-medium text-[var(--color-text)]">{relayStatus.deviceIp ?? "Sin IP"}</span></p>
-                  <p>Uptime: <span className="font-medium text-[var(--color-text)]">{formatUptime(relayStatus.uptimeMs)}</span></p>
-                  <p>Error: <span className="font-medium text-[var(--color-text)]">{relayStatus.lastError ?? "Sin errores"}</span></p>
-                </div>
-              ) : (
-                <div className="mt-3 space-y-2 text-sm text-[var(--color-text-muted)]">
-                  <p>Instala el ejecutable del relay en un PC Windows con acceso a las impresoras.</p>
-                  <p>Introduce la URL del VPS, el token y el `restaurantId`, y deja el relay en segundo plano.</p>
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-medium text-[var(--color-text)]">Token de conexion</p>
-                  <p className="mt-1 font-mono text-sm text-[var(--color-text-muted)]">
-                    {maskRelayToken(form.relayToken)}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    className="btn-secondary px-4 py-2.5 text-sm font-medium"
-                    onClick={() => void handleCopyRelayToken()}
-                    type="button"
-                  >
-                    Copiar token
-                  </button>
-                  <button
-                    className="btn-danger px-4 py-2.5 text-sm font-medium"
-                    disabled={relayAction === "token"}
-                    onClick={() => void handleRegenerateRelayToken()}
-                    type="button"
-                  >
-                    {relayAction === "token" ? <Spinner className="h-4 w-4" label="Generando" /> : "Generar nuevo token"}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <PrinterCard
-                actionLabel={relayAction === "kitchen" ? "Enviando..." : "Imprimir test"}
-                description="Se imprime al recibir pedido."
-                onTest={() => void handleRelayTest("kitchen")}
-                printerStatus={relayStatus?.printers.kitchen ?? "disabled"}
-                title="Impresora de cocina"
-              />
-              <PrinterCard
-                actionLabel={relayAction === "receipt" ? "Enviando..." : "Imprimir test"}
-                description="Se imprime al cobrar la cuenta."
-                onTest={() => void handleRelayTest("receipt")}
-                printerStatus={relayStatus?.printers.receipt ?? "disabled"}
-                title="Impresora de caja"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <ToggleRow
-              checked={form.autoPrintKitchen}
-              description="Activa la impresion automatica al crear un pedido."
-              label="Imprimir automaticamente en cocina"
-              onChange={() => updateField("autoPrintKitchen", !form.autoPrintKitchen)}
-            />
-            <ToggleRow
-              checked={form.autoPrintReceipt}
-              description="Activa la impresion automatica al cobrar una cuenta."
-              label="Imprimir automaticamente al cobrar"
-              onChange={() => updateField("autoPrintReceipt", !form.autoPrintReceipt)}
-            />
-            <ToggleRow
-              checked={form.printModifications}
-              description="Imprime tickets adicionales cuando se modifica un pedido existente."
-              label="Imprimir modificaciones en cocina"
-              onChange={() => updateField("printModifications", !form.printModifications)}
-            />
-
-            <Field label="Copias del ticket de cocina">
-              <select
-                className={getFieldClass(false)}
-                onChange={(event) => updateField("kitchenCopies", Number(event.target.value))}
-                value={form.kitchenCopies}
-              >
-                <option value={1}>1 copia</option>
-                <option value={2}>2 copias</option>
-              </select>
-            </Field>
-
-            <Field label="Mensaje para tickets de caja">
-              <textarea
-                className={getFieldClass(false, "min-h-28")}
-                onChange={(event) => updateField("ticketMessage", event.target.value)}
-                placeholder="¡Gracias por tu visita!"
-                value={form.ticketMessage}
-              />
-            </Field>
+            <ToggleRow checked={form.notificationSounds} description={`Horario operativo configurado: ${expectedPreview.schedule}`} label="Sonidos de notificacion" onChange={() => updateField("notificationSounds", !form.notificationSounds)} />
           </div>
         </div>
       </section>
@@ -797,18 +496,9 @@ export default function SettingsPage() {
             </p>
             <div className="mt-4 grid gap-3">
               <Field label='Escribe "RESETEAR" para confirmar'>
-                <input
-                  className={getFieldClass(false)}
-                  onChange={(event) => setResetConfirmation(event.target.value)}
-                  value={resetConfirmation}
-                />
+                <input className={getFieldClass(false)} onChange={(event) => setResetConfirmation(event.target.value)} value={resetConfirmation} />
               </Field>
-              <button
-                className="btn-danger px-4 py-2.5 text-sm font-medium"
-                disabled={resetting}
-                onClick={() => void handleReset()}
-                type="button"
-              >
+              <button className="btn-danger px-4 py-2.5 text-sm font-medium" disabled={resetting} onClick={() => void handleReset()} type="button">
                 {resetting ? <Spinner className="h-4 w-4" label="Reseteando" /> : "Resetear datos de prueba"}
               </button>
             </div>
@@ -819,12 +509,7 @@ export default function SettingsPage() {
             <p className="mt-2 text-sm text-[var(--color-text-muted)]">
               Genera un backup JSON con configuracion, equipo, carta, mesas, cuentas y cierres.
             </p>
-            <button
-              className="btn-secondary mt-4 px-4 py-2.5 text-sm font-medium"
-              disabled={exporting}
-              onClick={() => void handleExport()}
-              type="button"
-            >
+            <button className="btn-secondary mt-4 px-4 py-2.5 text-sm font-medium" disabled={exporting} onClick={() => void handleExport()} type="button">
               {exporting ? <Spinner className="h-4 w-4" label="Exportando" /> : "Exportar datos"}
             </button>
           </div>
@@ -882,50 +567,6 @@ function ToggleRow(props: {
   );
 }
 
-function PrinterCard(props: {
-  title: string;
-  description: string;
-  printerStatus: "ok" | "error" | "disabled";
-  onTest: () => void;
-  actionLabel: string;
-}) {
-  const statusMap = {
-    ok: {
-      label: "Conectada",
-      tone: "bg-emerald-50 text-emerald-700"
-    },
-    error: {
-      label: "Error",
-      tone: "bg-red-50 text-red-700"
-    },
-    disabled: {
-      label: "Desactivada",
-      tone: "bg-slate-100 text-slate-600"
-    }
-  } as const;
-
-  const current = statusMap[props.printerStatus];
-
-  return (
-    <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-[var(--color-text)]">{props.title}</p>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">{props.description}</p>
-        </div>
-        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${current.tone}`}>{current.label}</span>
-      </div>
-      <button
-        className="btn-secondary mt-4 px-4 py-2.5 text-sm font-medium"
-        onClick={props.onTest}
-        type="button"
-      >
-        {props.actionLabel}
-      </button>
-    </div>
-  );
-}
-
 function UploadIcon() {
   return (
     <svg aria-hidden="true" className="h-10 w-10 text-[var(--color-text-muted)]" fill="none" viewBox="0 0 24 24">
@@ -958,34 +599,6 @@ function buildAssetUrl(path: string) {
 
 function getFieldClass(hasError: boolean, extraClassName = "") {
   return `field-input ${extraClassName} ${hasError ? "border-red-300 bg-red-50" : ""}`.trim();
-}
-
-function maskRelayToken(token: string | null) {
-  if (!token) {
-    return "Sin token";
-  }
-
-  if (token.length <= 8) {
-    return token;
-  }
-
-  return `${token.slice(0, 4)}****${token.slice(-4)}`;
-}
-
-function formatUptime(uptimeMs: number | null) {
-  if (!uptimeMs || uptimeMs < 0) {
-    return "Sin datos";
-  }
-
-  const totalMinutes = Math.floor(uptimeMs / 60000);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-
-  return `${minutes}m`;
 }
 
 function resizeImage(file: File): Promise<Blob> {

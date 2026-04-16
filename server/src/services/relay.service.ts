@@ -276,15 +276,16 @@ export async function sendKitchenPrintJob(restaurantId: string, order: KitchenOr
   const restaurant = await (prisma.restaurant as unknown as {
     findUniqueOrThrow: (args: {
       where: { id: string };
-      select: { autoPrintKitchen: true; kitchenCopies: true };
-    }) => Promise<{ autoPrintKitchen?: boolean; kitchenCopies?: number }>;
+      select: { autoPrintKitchen: true; kitchenCopies: true; ticketWidth: true };
+    }) => Promise<{ autoPrintKitchen?: boolean; kitchenCopies?: number; ticketWidth?: number | null }>;
   }).findUniqueOrThrow({
     where: {
       id: restaurantId
     },
     select: {
       autoPrintKitchen: true,
-      kitchenCopies: true
+      kitchenCopies: true,
+      ticketWidth: true
     }
   });
 
@@ -296,7 +297,9 @@ export async function sendKitchenPrintJob(restaurantId: string, order: KitchenOr
   }
 
   const copies = Math.max(1, Math.min(2, (restaurant as { kitchenCopies?: number }).kitchenCopies ?? 1));
-  const ticket = generateKitchenTicket(order).toString("base64");
+  const ticket = generateKitchenTicket(order, {
+    ticketWidth: restaurant.ticketWidth ?? 80
+  }).toString("base64");
 
   return emitToRelayWithAck<
     { orderId: string; dataBase64: string; copies: number },
@@ -317,6 +320,7 @@ export async function sendReceiptPrintJob(restaurantId: string, bill: ReceiptBil
         address: true;
         phone: true;
         ticketMessage: true;
+        ticketWidth: true;
         autoPrintReceipt: true;
       };
     }) => Promise<{
@@ -324,6 +328,7 @@ export async function sendReceiptPrintJob(restaurantId: string, bill: ReceiptBil
       address: string;
       phone: string;
       ticketMessage: string | null;
+      ticketWidth?: number | null;
       autoPrintReceipt?: boolean;
     }>;
   }).findUniqueOrThrow({
@@ -335,6 +340,7 @@ export async function sendReceiptPrintJob(restaurantId: string, bill: ReceiptBil
       address: true,
       phone: true,
       ticketMessage: true,
+      ticketWidth: true,
       autoPrintReceipt: true
     }
   });
@@ -368,7 +374,24 @@ export async function sendReceiptPrintJob(restaurantId: string, bill: ReceiptBil
 }
 
 export async function sendRelayTest(restaurantId: string, printer: PrinterTarget) {
-  const restaurant = await prisma.restaurant.findUniqueOrThrow({
+  const restaurant = await (prisma.restaurant as unknown as {
+    findUniqueOrThrow: (args: {
+      where: { id: string };
+      select: {
+        name: true;
+        address: true;
+        phone: true;
+        ticketMessage: true;
+        ticketWidth: true;
+      };
+    }) => Promise<{
+      name: string;
+      address: string;
+      phone: string;
+      ticketMessage: string | null;
+      ticketWidth?: number | null;
+    }>;
+  }).findUniqueOrThrow({
     where: {
       id: restaurantId
     },
@@ -376,7 +399,8 @@ export async function sendRelayTest(restaurantId: string, printer: PrinterTarget
       name: true,
       address: true,
       phone: true,
-      ticketMessage: true
+      ticketMessage: true,
+      ticketWidth: true
     }
   });
 
