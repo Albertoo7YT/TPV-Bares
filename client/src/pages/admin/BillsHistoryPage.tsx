@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Skeleton from "../../components/Skeleton";
+import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { api } from "../../services/api";
 
@@ -85,6 +87,8 @@ type BillDetail = {
 const pageSize = 25;
 
 export default function BillsHistoryPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const { showToast } = useToast();
   const [datePreset, setDatePreset] = useState<DatePreset>("today");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "ALL">("ALL");
@@ -102,6 +106,7 @@ export default function BillsHistoryPage() {
   const [selectedBill, setSelectedBill] = useState<BillDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [printingBillId, setPrintingBillId] = useState<string | null>(null);
+  const [reopeningBillId, setReopeningBillId] = useState<string | null>(null);
 
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -140,6 +145,14 @@ export default function BillsHistoryPage() {
     let cancelled = false;
 
     async function loadWaiters() {
+      if (user?.role !== "ADMIN") {
+        if (!cancelled) {
+          setWaiters([]);
+          setUsersLoading(false);
+        }
+        return;
+      }
+
       try {
         const users = await api.get<UserOption[]>("/users");
 
@@ -166,7 +179,7 @@ export default function BillsHistoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [showToast]);
+  }, [showToast, user?.role]);
 
   useEffect(() => {
     let cancelled = false;
@@ -353,6 +366,44 @@ export default function BillsHistoryPage() {
     }
   }
 
+  async function handleReopenBill() {
+    if (!selectedBill) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Se reabrirá la cuenta de la mesa ${selectedBill.table.number} para volver a editar pedidos.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setReopeningBillId(selectedBill.id);
+
+    try {
+      const result = await api.post<{ ok: true; tableId: string; tableNumber: number }>(
+        `/bills/${selectedBill.id}/reopen`
+      );
+
+      setSelectedBillId(null);
+      showToast({
+        type: "success",
+        title: "Cuenta",
+        message: `Mesa ${result.tableNumber} reabierta`
+      });
+      navigate(`/order/${result.tableId}`);
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Cuenta",
+        message: error instanceof Error ? error.message : "No se pudo reabrir la cuenta"
+      });
+    } finally {
+      setReopeningBillId(null);
+    }
+  }
+
   return (
     <section className="space-y-6 page-enter">
       <style>{`
@@ -417,22 +468,28 @@ export default function BillsHistoryPage() {
               <option value="MIXED">Mixto</option>
             </select>
 
-            <select
-              className="field-input"
-              disabled={usersLoading}
-              onChange={(event) => {
-                setWaiterId(event.target.value);
-                setPage(1);
-              }}
-              value={waiterId}
-            >
-              <option value="ALL">Todos los camareros</option>
-              {waiters.map((waiter) => (
-                <option key={waiter.id} value={waiter.id}>
-                  {waiter.name}
-                </option>
-              ))}
-            </select>
+            {user?.role === "ADMIN" ? (
+              <select
+                className="field-input"
+                disabled={usersLoading}
+                onChange={(event) => {
+                  setWaiterId(event.target.value);
+                  setPage(1);
+                }}
+                value={waiterId}
+              >
+                <option value="ALL">Todos los camareros</option>
+                {waiters.map((waiter) => (
+                  <option key={waiter.id} value={waiter.id}>
+                    {waiter.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="field-input flex items-center text-sm text-[var(--color-text-muted)]">
+                Tus cuentas cobradas
+              </div>
+            )}
           </div>
 
           {datePreset === "custom" ? (
@@ -465,14 +522,6 @@ export default function BillsHistoryPage() {
           ) : null}
         </div>
       </header>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <SummaryCard label="Total cuentas" value={String(data?.summary.count ?? 0)} />
-        <SummaryCard label="Total facturado" value={formatCurrency(data?.summary.totalAmount ?? 0)} highlight />
-        <SummaryCard label="Efectivo" value={formatCurrency(data?.summary.cashAmount ?? 0)} />
-        <SummaryCard label="Tarjeta" value={formatCurrency(data?.summary.cardAmount ?? 0)} />
-        <SummaryCard label="Ticket medio" value={formatCurrency(data?.summary.averageTicket ?? 0)} />
-      </div>
 
       <section className="surface-card overflow-hidden">
         <div className="border-b border-[var(--color-border)] px-5 py-4">
@@ -679,8 +728,13 @@ export default function BillsHistoryPage() {
                     </div>
 
                     <div className="mt-5 grid gap-2">
-                      <button className="btn-secondary px-4 py-3 text-sm font-medium" onClick={() => window.print()} type="button">
-                        Ver ticket
+                      <button
+                        className="btn-primary px-4 py-3 text-sm font-medium"
+                        disabled={reopeningBillId === selectedBill.id}
+                        onClick={() => void handleReopenBill()}
+                        type="button"
+                      >
+                        {reopeningBillId === selectedBill.id ? "Reabriendo..." : "Reabrir cuenta"}
                       </button>
                       <button className="btn-primary px-4 py-3 text-sm font-medium" disabled={printingBillId === selectedBill.id} onClick={() => void handlePrintBill()} type="button">
                         {printingBillId === selectedBill.id ? "Imprimiendo..." : "Imprimir"}
@@ -694,21 +748,6 @@ export default function BillsHistoryPage() {
         </div>
       ) : null}
     </section>
-  );
-}
-
-function SummaryCard(props: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <article className="surface-card p-5">
-      <p className="text-sm text-[var(--color-text-muted)]">{props.label}</p>
-      <p
-        className={`mono mt-2 text-2xl font-bold ${
-          props.highlight ? "text-[var(--color-primary)]" : "text-[var(--color-text)]"
-        }`}
-      >
-        {props.value}
-      </p>
-    </article>
   );
 }
 
