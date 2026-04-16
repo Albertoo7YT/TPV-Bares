@@ -172,6 +172,7 @@ function mapRestaurantSettings(
 
   return {
     id: restaurant.id,
+    email: restaurant.email ?? "",
     name: restaurant.name,
     address: restaurant.address,
     phone: restaurant.phone,

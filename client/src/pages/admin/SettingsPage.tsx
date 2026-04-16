@@ -1,5 +1,6 @@
 import type { ChangeEvent, DragEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Skeleton from "../../components/Skeleton";
 import Spinner from "../../components/Spinner";
 import { useToast } from "../../context/ToastContext";
@@ -8,6 +9,7 @@ import { getStoredToken } from "../../services/tokenStorage";
 
 type SettingsResponse = {
   id: string;
+  email: string;
   name: string;
   address: string;
   phone: string;
@@ -33,6 +35,12 @@ type FormState = Omit<SettingsResponse, "id" | "ticketMessage"> & {
   ticketMessage: string;
 };
 
+type CredentialsFormState = {
+  email: string;
+  currentPassword: string;
+  newPassword: string;
+};
+
 type FormErrors = Partial<
   Record<"name" | "address" | "phone" | "taxRate" | "kitchenAlertMinutes" | "logo", string>
 >;
@@ -40,6 +48,7 @@ type FormErrors = Partial<
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 
 const defaultForm: FormState = {
+  email: "",
   name: "",
   address: "",
   phone: "",
@@ -62,11 +71,18 @@ const defaultForm: FormState = {
 };
 
 export default function SettingsPage() {
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { showToast } = useToast();
   const [form, setForm] = useState<FormState>(defaultForm);
+  const [credentials, setCredentials] = useState<CredentialsFormState>({
+    email: "",
+    currentPassword: "",
+    newPassword: ""
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingCredentials, setSavingCredentials] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -84,6 +100,11 @@ export default function SettingsPage() {
           setForm({
             ...settings,
             ticketMessage: settings.ticketMessage ?? ""
+          });
+          setCredentials({
+            email: settings.email ?? "",
+            currentPassword: "",
+            newPassword: ""
           });
         }
       } catch (error) {
@@ -168,6 +189,67 @@ export default function SettingsPage() {
       });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSaveCredentials() {
+    if (!credentials.email.trim()) {
+      showToast({
+        type: "warning",
+        title: "Credenciales",
+        message: "Introduce un email valido"
+      });
+      return;
+    }
+
+    if (!credentials.currentPassword.trim()) {
+      showToast({
+        type: "warning",
+        title: "Credenciales",
+        message: "Introduce la contraseña actual"
+      });
+      return;
+    }
+
+    if (!credentials.newPassword.trim()) {
+      showToast({
+        type: "warning",
+        title: "Credenciales",
+        message: "Introduce la nueva contraseña"
+      });
+      return;
+    }
+
+    setSavingCredentials(true);
+
+    try {
+      await api.put("/settings/credentials", {
+        email: credentials.email.trim(),
+        currentPassword: credentials.currentPassword,
+        newPassword: credentials.newPassword
+      });
+
+      setForm((current) => ({ ...current, email: credentials.email.trim() }));
+      setCredentials((current) => ({
+        ...current,
+        email: current.email.trim(),
+        currentPassword: "",
+        newPassword: ""
+      }));
+
+      showToast({
+        type: "success",
+        title: "Credenciales",
+        message: "Email y contraseña actualizados"
+      });
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Credenciales",
+        message: error instanceof Error ? error.message : "No se pudieron actualizar las credenciales"
+      });
+    } finally {
+      setSavingCredentials(false);
     }
   }
 
@@ -478,6 +560,103 @@ export default function SettingsPage() {
             <ToggleRow checked={form.allowTakeaway} description="Permite crear pedidos para llevar o sin mesa asignada." label="Permitir pedidos sin mesa" onChange={() => updateField("allowTakeaway", !form.allowTakeaway)} />
 
             <ToggleRow checked={form.notificationSounds} description={`Horario operativo configurado: ${expectedPreview.schedule}`} label="Sonidos de notificacion" onChange={() => updateField("notificationSounds", !form.notificationSounds)} />
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-2">
+        <div className="surface-card p-5 md:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--color-text)]">Credenciales de acceso</h2>
+              <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                Cambia el email y la contraseña que autorizan nuevos dispositivos antes de entrar con PIN.
+              </p>
+            </div>
+            <button
+              className="btn-primary px-4 py-2.5 text-sm font-medium"
+              disabled={savingCredentials}
+              onClick={() => void handleSaveCredentials()}
+              type="button"
+            >
+              {savingCredentials ? <Spinner className="h-4 w-4" label="Guardando" /> : "Guardar acceso"}
+            </button>
+          </div>
+
+          <div className="mt-5 grid gap-4">
+            <Field label="Email de acceso" required>
+              <input
+                className={getFieldClass(false)}
+                onChange={(event) =>
+                  setCredentials((current) => ({ ...current, email: event.target.value }))
+                }
+                type="email"
+                value={credentials.email}
+              />
+            </Field>
+            <Field label="Contraseña actual" required>
+              <input
+                className={getFieldClass(false)}
+                onChange={(event) =>
+                  setCredentials((current) => ({
+                    ...current,
+                    currentPassword: event.target.value
+                  }))
+                }
+                type="password"
+                value={credentials.currentPassword}
+              />
+            </Field>
+            <Field label="Nueva contraseña" required>
+              <input
+                className={getFieldClass(false)}
+                onChange={(event) =>
+                  setCredentials((current) => ({
+                    ...current,
+                    newPassword: event.target.value
+                  }))
+                }
+                type="password"
+                value={credentials.newPassword}
+              />
+            </Field>
+          </div>
+        </div>
+
+        <div className="surface-card p-5 md:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--color-text)]">Cuentas para entrar al TPV</h2>
+              <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                Crea mas cuentas con PIN para camareros, administradores o cocina desde la gestion de usuarios.
+              </p>
+            </div>
+            <button
+              className="btn-secondary px-4 py-2.5 text-sm font-medium"
+              onClick={() => navigate("/admin/users")}
+              type="button"
+            >
+              Gestionar cuentas
+            </button>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-5">
+            <p className="text-sm font-medium text-[var(--color-text)]">
+              Desde Usuarios y PINs puedes:
+            </p>
+            <ul className="mt-3 space-y-2 text-sm text-[var(--color-text-muted)]">
+              <li>Crear nuevas cuentas para entrar al programa.</li>
+              <li>Asignar rol de Administrador, Camarero/a o Cocina.</li>
+              <li>Activar, desactivar o eliminar accesos existentes.</li>
+              <li>Cambiar el PIN de cualquier cuenta.</li>
+            </ul>
+            <button
+              className="btn-primary mt-5 px-4 py-2.5 text-sm font-medium"
+              onClick={() => navigate("/admin/users")}
+              type="button"
+            >
+              Crear o editar cuentas
+            </button>
           </div>
         </div>
       </section>

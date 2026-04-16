@@ -6,6 +6,11 @@ type DashboardStatsResponse = {
   totalOrders: MetricComparison;
   averageTicket: MetricComparison;
   activeTables: MetricComparison;
+  paymentBreakdown: {
+    cash: { count: number; total: number };
+    card: { count: number; total: number };
+    mixed: { count: number; total: number };
+  };
   salesByHour: Array<{ hour: string; total: number }>;
   topProducts: Array<{ name: string; quantity: number; total: number }>;
   recentBills: Array<{
@@ -252,11 +257,36 @@ export async function getDashboardStats(
     };
   });
 
+  const paymentBreakdown = todayBills.reduce(
+    (acc, bill) => {
+      const total = decimalToNumber(bill.total);
+
+      if (bill.paymentMethod === "CASH") {
+        acc.cash.count += 1;
+        acc.cash.total = roundAmount(acc.cash.total + total);
+      } else if (bill.paymentMethod === "CARD") {
+        acc.card.count += 1;
+        acc.card.total = roundAmount(acc.card.total + total);
+      } else {
+        acc.mixed.count += 1;
+        acc.mixed.total = roundAmount(acc.mixed.total + total);
+      }
+
+      return acc;
+    },
+    {
+      cash: { count: 0, total: 0 },
+      card: { count: 0, total: 0 },
+      mixed: { count: 0, total: 0 }
+    }
+  );
+
   return {
     totalSales: buildComparison(totalSales, yesterdaySales),
     totalOrders: buildComparison(totalOrders, yesterdayOrders),
     averageTicket: buildComparison(averageTicket, yesterdayAverageTicket),
     activeTables: buildComparison(activeTablesCount, yesterdayActiveTablesCount),
+    paymentBreakdown,
     salesByHour,
     topProducts,
     recentBills

@@ -170,6 +170,22 @@ function getPartialTotal(
   return Number(total.toFixed(2));
 }
 
+function parseReopenedTableName(value: string | null | undefined) {
+  if (!value || !value.startsWith("__REOPEN__:")) {
+    return null;
+  }
+
+  const parts = value.split(":");
+  if (parts.length < 3) {
+    return null;
+  }
+
+  return {
+    originalTableId: parts[1] ?? "",
+    label: parts.slice(2).join(":")
+  };
+}
+
 function mapTableSummary(table: {
   id: string;
   number: number;
@@ -188,12 +204,15 @@ function mapTableSummary(table: {
     items: Array<{ quantity: number; unitPrice: { toNumber(): number } }>;
   }>;
 }) {
+  const reopenedMeta = parseReopenedTableName(table.name);
   const activeOrdersCount = table.orders.filter((order) =>
     ACTIVE_ORDER_STATUSES.includes(order.status as (typeof ACTIVE_ORDER_STATUSES)[number])
   ).length;
   const activeOrders = table.orders.filter((order) =>
     ACTIVE_ORDER_STATUSES.includes(order.status as (typeof ACTIVE_ORDER_STATUSES)[number])
   );
+  const effectiveStatus =
+    table.status === "OCCUPIED" && activeOrdersCount === 0 ? "FREE" : table.status;
   const firstActiveOrder = [...activeOrders].sort((left, right) => {
     const leftTime = left.createdAt ? left.createdAt.getTime() : Number.MAX_SAFE_INTEGER;
     const rightTime = right.createdAt ? right.createdAt.getTime() : Number.MAX_SAFE_INTEGER;
@@ -203,13 +222,13 @@ function mapTableSummary(table: {
   return {
     id: table.id,
     number: table.number,
-    name: table.name,
+    name: reopenedMeta?.label ?? table.name,
     zone: table.zone,
     capacity: table.capacity,
     restaurantId: table.restaurantId,
-    status: table.status,
+    status: effectiveStatus,
     summary:
-      table.status === "OCCUPIED"
+      effectiveStatus === "OCCUPIED"
         ? {
             activeOrdersCount,
             partialTotal: getPartialTotal(activeOrders),

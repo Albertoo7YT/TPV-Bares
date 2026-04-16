@@ -60,7 +60,9 @@ async function request<T>(method: string, path: string, options: RequestOptions 
     const message =
       typeof payload === "object" && payload !== null && "message" in payload
         ? String(payload.message)
-        : response.statusText || "Request failed";
+        : response.statusText
+          ? `${response.status} ${response.statusText}`
+          : `HTTP ${response.status}`;
 
     throw new ApiError(message, response.status, payload);
   }

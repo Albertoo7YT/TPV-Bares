@@ -89,7 +89,12 @@ export default function BillPage() {
         tableId,
         paymentMethod,
         cashAmount: paymentMethod === "CARD" ? undefined : toNumberOrUndefined(cashAmount),
-        cardAmount: paymentMethod === "CASH" ? undefined : toNumberOrUndefined(cardAmount)
+        cardAmount:
+          paymentMethod === "CARD"
+            ? preview.total
+            : paymentMethod === "CASH"
+              ? undefined
+              : toNumberOrUndefined(cardAmount)
       });
       setCreatedBill(bill);
       showToast({ type: "success", title: "Cobro", message: "Cuenta cobrada correctamente" });

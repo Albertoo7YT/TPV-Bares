@@ -72,6 +72,15 @@ function normalizeOrder(value: unknown) {
   return value;
 }
 
+function isUniqueNameError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "P2002"
+  );
+}
+
 export async function listIngredients(restaurantId: string) {
   return ingredientModel.ingredient.findMany({
     where: {
@@ -88,16 +97,24 @@ export async function createIngredient(restaurantId: string, input: IngredientIn
   const available = normalizeAvailable(input.available);
   const order = normalizeOrder(input.order);
 
-  return ingredientModel.ingredient.create({
-    data: {
-      restaurantId,
-      name,
-      category,
-      extraPrice,
-      available,
-      order
+  try {
+    return await ingredientModel.ingredient.create({
+      data: {
+        restaurantId,
+        name,
+        category,
+        extraPrice,
+        available,
+        order
+      }
+    });
+  } catch (error) {
+    if (isUniqueNameError(error)) {
+      throw createHttpError(400, "Ya existe un ingrediente con ese nombre");
     }
-  });
+
+    throw error;
+  }
 }
 
 export async function updateIngredient(restaurantId: string, ingredientId: string, input: IngredientInput) {
@@ -120,10 +137,18 @@ export async function updateIngredient(restaurantId: string, ingredientId: strin
   if (input.available !== undefined) data.available = normalizeAvailable(input.available);
   if (input.order !== undefined) data.order = normalizeOrder(input.order);
 
-  return ingredientModel.ingredient.update({
-    where: { id: ingredientId },
-    data
-  });
+  try {
+    return await ingredientModel.ingredient.update({
+      where: { id: ingredientId },
+      data
+    });
+  } catch (error) {
+    if (isUniqueNameError(error)) {
+      throw createHttpError(400, "Ya existe un ingrediente con ese nombre");
+    }
+
+    throw error;
+  }
 }
 
 export async function deleteIngredient(restaurantId: string, ingredientId: string) {

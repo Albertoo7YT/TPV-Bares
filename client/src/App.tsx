@@ -71,7 +71,7 @@ function AppRoutes() {
             <Route element={<KitchenUnavailablePage />} path="/kitchen-disabled" />
           </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+          <Route element={<ProtectedRoute allowedRoles={["ADMIN", "WAITER"]} />}>
             <Route element={<BillsHistoryPage />} path="/bills" />
           </Route>
         </Route>

@@ -5,8 +5,8 @@
   "printers": {
     "kitchen": {
       "enabled": true,
-      "type": "network",
-      "usbPort": "",
+      "type": "usb",
+      "usbPort": "EPSON TM-T20II Receipt",
       "networkIp": "",
       "networkPort": 9100
     },

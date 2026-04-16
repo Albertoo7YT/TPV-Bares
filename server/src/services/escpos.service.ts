@@ -176,6 +176,24 @@ function formatMoney(value: number | null | undefined) {
   return `${amount.toFixed(2).replace(".", ",")}€`;
 }
 
+function formatPaymentMethodLabel(value: string) {
+  if (value === "CASH") return "Efectivo";
+  if (value === "CARD") return "Tarjeta";
+  if (value === "MIXED") return "Mixto";
+  return value;
+}
+
+function getPrintedRestaurantName(name: string) {
+  const trimmed = name.trim();
+  const normalized = trimmed.toLowerCase();
+
+  if (normalized === "burger house" || normalized === "burgerhouse") {
+    return "Deja Vu";
+  }
+
+  return trimmed;
+}
+
 function decimalToNumber(value: { toNumber(): number } | number | null | undefined) {
   if (value === null || value === undefined) {
     return null;
@@ -274,7 +292,7 @@ export function generateKitchenTicket(
   }
 
   builder.line(dashedSeparator(width));
-  builder.bold(true).line(`TOTAL ITEMS: ${totalItems}`).bold(false);
+  builder.bold(true).line(`TOTAL ARTICULOS: ${totalItems}`).bold(false);
   builder.align("center").line(separator(width));
   builder.doubleSize(true).line(`MESA ${order.table.number}`).doubleSize(false);
   builder.newLine(1).cut();
@@ -287,6 +305,7 @@ export function generateReceiptTicket(
   restaurant: RestaurantTicketPayload
 ): Buffer {
   const builder = new ESCPOSBuilder().initialize();
+  const printedRestaurantName = getPrintedRestaurantName(restaurant.name);
   const width = getTicketCharsPerLine(restaurant.ticketWidth);
   const itemTextWidth = width === 32 ? 20 : 34;
   const itemRows = bill.orders.flatMap((order) =>
@@ -305,7 +324,7 @@ export function generateReceiptTicket(
   const changeAmount =
     bill.paymentMethod === "CASH" && cashAmount !== null ? Number((cashAmount - total).toFixed(2)) : null;
 
-  builder.align("center").bold(true).line(restaurant.name.toUpperCase()).bold(false);
+  builder.align("center").bold(true).line(printedRestaurantName.toUpperCase()).bold(false);
   builder.line(restaurant.address);
   builder.line(`Tel: ${restaurant.phone}`);
   builder.line(separator(width));
@@ -329,7 +348,7 @@ export function generateReceiptTicket(
   builder.line(padLine("IVA (10%):", formatMoney(decimalToNumber(bill.tax)), width));
   builder.bold(true).line(padLine("TOTAL:", formatMoney(total), width)).bold(false);
   builder.line(dashedSeparator(width));
-  builder.line(`Pago: ${bill.paymentMethod}`);
+  builder.line(`Pago: ${formatPaymentMethodLabel(bill.paymentMethod)}`);
 
   if (cashAmount !== null) {
     builder.line(padLine("Entregado:", formatMoney(cashAmount), width));
@@ -349,6 +368,7 @@ export function generateReceiptTicket(
 
 export function generateTestTicket(printer: "kitchen" | "receipt", restaurant: RestaurantTicketPayload): Buffer {
   const width = getTicketCharsPerLine(restaurant.ticketWidth);
+  const printedRestaurantName = getPrintedRestaurantName(restaurant.name);
   return new ESCPOSBuilder()
     .initialize()
     .align("center")
@@ -359,7 +379,7 @@ export function generateTestTicket(printer: "kitchen" | "receipt", restaurant: R
     .doubleSize(true)
     .line(printer === "kitchen" ? "COCINA" : "CAJA")
     .doubleSize(false)
-    .line(restaurant.name.toUpperCase())
+    .line(printedRestaurantName.toUpperCase())
     .line(formatDateTime())
     .newLine(1)
     .align("left")

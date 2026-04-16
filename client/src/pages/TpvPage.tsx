@@ -522,7 +522,12 @@ export default function TpvPage() {
         tableId: selectedTable.id,
         paymentMethod,
         cashAmount: paymentMethod === "CARD" ? undefined : toNumberOrUndefined(cashAmount),
-        cardAmount: paymentMethod === "CASH" ? undefined : toNumberOrUndefined(cardAmount)
+        cardAmount:
+          paymentMethod === "CARD"
+            ? billPreview.total
+            : paymentMethod === "CASH"
+              ? undefined
+              : toNumberOrUndefined(cardAmount)
       });
 
       const total = billPreview.total;
@@ -861,7 +866,7 @@ export default function TpvPage() {
                 </label>
               ) : null}
 
-              {paymentMethod !== "CASH" ? (
+              {paymentMethod === "MIXED" ? (
                 <label className="block">
                   <span className="mb-2 block text-sm font-medium text-[var(--color-text-muted)]">Tarjeta</span>
                   <input

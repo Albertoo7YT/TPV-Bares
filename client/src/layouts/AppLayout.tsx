@@ -12,7 +12,7 @@ type TabItem = {
 const tabs: TabItem[] = [
   { to: "/tables", label: "Mesas", roles: ["WAITER", "ADMIN"] },
   { to: "/tpv", label: "TPV", roles: ["WAITER", "ADMIN"] },
-  { to: "/bills", label: "Cuentas", roles: ["ADMIN"] },
+  { to: "/bills", label: "Cuentas", roles: ["WAITER", "ADMIN"] },
   { to: "/admin", label: "Admin", roles: ["ADMIN"] }
 ];
 
@@ -99,14 +99,14 @@ export default function AppLayout() {
         </header>
       )}
 
-      <main className={`mx-auto ${isTpvRoute ? "max-w-[1600px] px-3 pb-6 pt-3" : "max-w-6xl px-4 pb-28 pt-2"}`}>
+      <main className={`mx-auto ${isTpvRoute ? "max-w-[1600px] px-3 pb-6 pt-3" : "max-w-6xl px-4 pb-40 pt-2 md:pb-32"}`}>
         <div className="page-enter" key={location.pathname}>
           <Outlet />
         </div>
       </main>
 
       {!isTpvRoute ? (
-        <nav className="fixed inset-x-0 bottom-0 border-t border-[var(--color-border)] bg-white/98 px-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 backdrop-blur md:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--color-border)] bg-white px-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] md:hidden">
           <div
             className="grid gap-2"
             style={{ gridTemplateColumns: `repeat(${mobileTabs.length}, minmax(0, 1fr))` }}

@@ -629,14 +629,14 @@ function ModalCard(props: {
 }) {
   return (
     <div className="fixed inset-0 z-40 flex items-end bg-black/40 p-4 backdrop-blur-sm md:items-center md:justify-center">
-      <div className="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-xl md:p-6">
-        <div className="mb-4 flex items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4">
+      <div className="flex max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] px-5 py-4 md:px-6">
           <h2 className="text-lg font-semibold text-[var(--color-text)]">{props.title}</h2>
           <button className="btn-ghost min-h-11 px-3 py-2 text-sm" onClick={props.onClose} type="button">
             Cerrar
           </button>
         </div>
-        {props.children}
+        <div className="overflow-y-auto px-5 py-5 md:px-6 md:py-6">{props.children}</div>
       </div>
     </div>
   );

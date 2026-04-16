@@ -13,6 +13,12 @@ type CreateBillInput = {
   cardAmount?: unknown;
 };
 
+type UpdateBillInput = {
+  paymentMethod?: unknown;
+  cashAmount?: unknown;
+  cardAmount?: unknown;
+};
+
 type ListBillsInput = {
   from?: unknown;
   to?: unknown;
@@ -65,6 +71,26 @@ function decimalToNumber(value: { toNumber(): number }) {
 
 function roundAmount(value: number) {
   return Number(value.toFixed(2));
+}
+
+function buildReopenedTableName(originalTableId: string, originalTableNumber: number) {
+  return `__REOPEN__:${originalTableId}:Mesa reabierta ${originalTableNumber}`;
+}
+
+function parseReopenedTableName(value: string | null | undefined) {
+  if (!value || !value.startsWith("__REOPEN__:")) {
+    return null;
+  }
+
+  const parts = value.split(":");
+  if (parts.length < 3) {
+    return null;
+  }
+
+  return {
+    originalTableId: parts[1] ?? "",
+    label: parts.slice(2).join(":")
+  };
 }
 
 function normalizeDate(value: unknown, fieldName: string) {
@@ -343,7 +369,8 @@ export async function createBill(input: CreateBillInput, user: AuthenticatedUser
   const normalizedCashAmount = normalizeOptionalAmount(input.cashAmount, "cashAmount");
   const normalizedCardAmount = normalizeOptionalAmount(input.cardAmount, "cardAmount");
 
-  await getTableOrThrow(user.restaurantId, tableId);
+  const table = await getTableOrThrow(user.restaurantId, tableId);
+  const reopenedMeta = parseReopenedTableName(table.name);
 
   const orders = await getBillableOrders(tableId, user.restaurantId);
 
@@ -375,7 +402,7 @@ export async function createBill(input: CreateBillInput, user: AuthenticatedUser
   const bill = await prisma.$transaction(async (tx) => {
     const createdBill = await tx.bill.create({
       data: {
-        tableId,
+        tableId: reopenedMeta?.originalTableId ?? tableId,
         subtotal: totals.subtotal,
         tax: totals.tax,
         total: totals.total,
@@ -393,18 +420,31 @@ export async function createBill(input: CreateBillInput, user: AuthenticatedUser
         }
       },
       data: {
-        billId: createdBill.id
+        billId: createdBill.id,
+        ...(reopenedMeta
+          ? {
+              tableId: reopenedMeta.originalTableId
+            }
+          : {})
       }
     });
 
-    await tx.table.update({
-      where: {
-        id: tableId
-      },
-      data: {
-        status: "FREE"
-      }
-    });
+    if (reopenedMeta) {
+      await tx.table.delete({
+        where: {
+          id: tableId
+        }
+      });
+    } else {
+      await tx.table.update({
+        where: {
+          id: tableId
+        },
+        data: {
+          status: "FREE"
+        }
+      });
+    }
 
     return createdBill;
   });
@@ -413,7 +453,7 @@ export async function createBill(input: CreateBillInput, user: AuthenticatedUser
 
   emitToRestaurant("bill:created", user.restaurantId, fullBill);
   emitToRestaurant("table:statusChanged", user.restaurantId, {
-    tableId,
+    tableId: reopenedMeta?.originalTableId ?? tableId,
     status: "FREE"
   });
   void sendReceiptPrintJob(user.restaurantId, fullBill).catch((error) => {
@@ -439,6 +479,162 @@ export async function printBillReceipt(billId: string, user: AuthenticatedUser) 
 
   const fullBill = await loadBillWithDetail(bill.id);
   return sendReceiptPrintJob(user.restaurantId, fullBill, { force: true });
+}
+
+export async function reopenBill(billId: string, user: AuthenticatedUser) {
+  const bill = await prisma.bill.findFirst({
+    where: {
+      id: billId,
+      table: {
+        restaurantId: user.restaurantId
+      }
+    },
+    select: {
+      id: true,
+      tableId: true,
+      table: {
+        select: {
+          id: true,
+          number: true
+        }
+      },
+      orders: {
+        select: {
+          id: true
+        }
+      }
+    }
+  });
+
+  if (!bill) {
+    throw createHttpError(404, "Bill not found");
+  }
+
+  if (bill.orders.length === 0) {
+    throw createHttpError(400, "No se puede reabrir una cuenta sin pedidos");
+  }
+
+  const existingReopenedTable = await prisma.table.findFirst({
+    where: {
+      restaurantId: user.restaurantId,
+      name: buildReopenedTableName(bill.tableId, bill.table.number)
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (existingReopenedTable) {
+    throw createHttpError(400, "Esta cuenta ya esta reabierta");
+  }
+
+  const temporaryTable = await prisma.$transaction(async (tx) => {
+    const maxTableNumber = await tx.table.aggregate({
+      where: {
+        restaurantId: user.restaurantId
+      },
+      _max: {
+        number: true
+      }
+    });
+
+    const temporaryTableNumber = (maxTableNumber._max.number ?? 0) + 1;
+    const temporaryTableName = buildReopenedTableName(bill.tableId, bill.table.number);
+
+    const temporaryTable = await tx.table.create({
+      data: {
+        restaurantId: user.restaurantId,
+        number: temporaryTableNumber,
+        name: temporaryTableName,
+        zone: "Reabiertas",
+        capacity: 1,
+        status: "OCCUPIED"
+      }
+    });
+
+    await tx.order.updateMany({
+      where: {
+        billId: bill.id
+      },
+      data: {
+        billId: null,
+        tableId: temporaryTable.id
+      }
+    });
+
+    await tx.bill.delete({
+      where: {
+        id: bill.id
+      }
+    });
+    return temporaryTable;
+  });
+
+  emitToRestaurant("table:statusChanged", user.restaurantId, {
+    tableId: temporaryTable.id,
+    status: "OCCUPIED"
+  });
+
+  return {
+    ok: true,
+    tableId: temporaryTable.id,
+    tableNumber: bill.table.number
+  };
+}
+
+export async function updateClosedBill(billId: string, input: UpdateBillInput, user: AuthenticatedUser) {
+  const paymentMethod = normalizePaymentMethod(input.paymentMethod);
+  const normalizedCashAmount = normalizeOptionalAmount(input.cashAmount, "cashAmount");
+  const normalizedCardAmount = normalizeOptionalAmount(input.cardAmount, "cardAmount");
+
+  const bill = await prisma.bill.findFirst({
+    where: {
+      id: billId,
+      table: {
+        restaurantId: user.restaurantId
+      }
+    },
+    select: {
+      id: true,
+      total: true
+    }
+  });
+
+  if (!bill) {
+    throw createHttpError(404, "Bill not found");
+  }
+
+  const total = decimalToNumber(bill.total);
+  const cashAmount = paymentMethod === "CARD" ? null : normalizedCashAmount;
+  const cardAmount = paymentMethod === "CARD" ? total : normalizedCardAmount;
+
+  if (paymentMethod === "CASH" && cashAmount === null) {
+    throw createHttpError(400, "Introduce la cantidad recibida en efectivo");
+  }
+
+  if (paymentMethod === "MIXED") {
+    if (cashAmount === null || cardAmount === null) {
+      throw createHttpError(400, "Introduce los importes de efectivo y tarjeta");
+    }
+
+    if (roundAmount(cashAmount + cardAmount) < total) {
+      throw createHttpError(400, "La suma de efectivo y tarjeta debe cubrir el total");
+    }
+  }
+
+  await prisma.bill.update({
+    where: {
+      id: bill.id
+    },
+    data: {
+      paymentMethod,
+      cashAmount,
+      cardAmount
+    }
+  });
+
+  const fullBill = await loadBillWithDetail(bill.id);
+  return mapBillDetail(fullBill);
 }
 
 export async function listBills(input: ListBillsInput, user: AuthenticatedUser) {

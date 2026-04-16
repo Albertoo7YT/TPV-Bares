@@ -6,7 +6,9 @@ import {
   getBillById,
   getBillPreview,
   listBills,
-  printBillReceipt
+  printBillReceipt,
+  reopenBill,
+  updateClosedBill
 } from "../services/billService.js";
 
 const router = Router();
@@ -44,6 +46,24 @@ router.post("/:id/print", roleMiddleware(["ADMIN", "WAITER"]), async (request, r
   try {
     const result = await printBillReceipt(getRouteId(request.params.id, "billId"), request.user!);
     response.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/:id/reopen", roleMiddleware(["ADMIN", "WAITER"]), async (request, response, next) => {
+  try {
+    const result = await reopenBill(getRouteId(request.params.id, "billId"), request.user!);
+    response.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/:id", roleMiddleware(["ADMIN", "WAITER"]), async (request, response, next) => {
+  try {
+    const bill = await updateClosedBill(getRouteId(request.params.id, "billId"), request.body, request.user!);
+    response.json(bill);
   } catch (error) {
     next(error);
   }

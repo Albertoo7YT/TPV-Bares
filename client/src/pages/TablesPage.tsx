@@ -168,7 +168,7 @@ export default function TablesPage() {
   };
 
   return (
-    <section className="space-y-5" {...pullToRefresh.bind}>
+    <section className="space-y-5 pb-12 md:pb-0" {...pullToRefresh.bind}>
       <PullIndicator isRefreshing={pullToRefresh.isRefreshing} pullDistance={pullToRefresh.pullDistance} />
 
       <header className="space-y-1">
@@ -193,7 +193,7 @@ export default function TablesPage() {
         />
       ))}
 
-      <section className="mt-12 border-t border-[var(--color-border)] pb-20 pt-6 text-center md:pb-6">
+      <section className="mt-12 border-t border-[var(--color-border)] pb-36 pt-6 text-center md:pb-6">
         <p className="text-sm text-[var(--color-text-muted)]">
           {user?.name ?? "-"} · {formatRoleLabel(user?.role)}
         </p>
@@ -245,18 +245,19 @@ function TablesSection(props: { title: string; tables: TableItem[]; loading: boo
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
           {tables.map((table) => (
             <article
+              className={`relative min-h-[96px] rounded-xl transition-all duration-200 ${cardStyles[table.status]}`}
               key={table.id}
-              className={`relative min-h-[68px] rounded-xl px-3.5 py-3 transition-all duration-200 ${cardStyles[table.status]}`}
             >
               <button
                 aria-label={`Abrir mesa ${table.number}`}
-                className="absolute inset-0 rounded-xl"
+                className="absolute inset-0 z-[1] rounded-xl"
                 disabled={busyTableId === table.id}
                 onClick={() => onTablePress(table)}
                 type="button"
-              />
+              >
+              </button>
 
-              <div className="relative z-[1]">
+              <div className="pointer-events-none px-3.5 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <p className="mono text-2xl font-bold text-[var(--color-text)]">{table.number}</p>
                   <div className="flex flex-col items-end gap-1">
@@ -276,14 +277,22 @@ function TablesSection(props: { title: string; tables: TableItem[]; loading: boo
                     {table.summary.activeOrdersCount} {table.summary.activeOrdersCount === 1 ? "pedido" : "pedidos"}
                   </p>
                 ) : null}
+                {table.zone === "Reabiertas" && table.name ? (
+                  <p className="mt-1 text-xs font-medium text-[var(--color-primary)]">
+                    {table.name}
+                  </p>
+                ) : null}
               </div>
 
               {table.status !== "OCCUPIED" ? (
-                <div className="relative z-[2] mt-2 flex justify-end">
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex justify-end px-3.5 pb-3">
                   <button
-                    className="rounded-full px-2.5 py-1 text-[11px] font-medium text-[var(--color-text-muted)] transition-colors duration-200 hover:bg-white/70 hover:text-[var(--color-primary)]"
+                    className="pointer-events-auto rounded-full bg-white/85 px-3 py-1.5 text-xs font-medium text-[var(--color-text-muted)] shadow-sm transition-colors duration-200 hover:bg-white hover:text-[var(--color-primary)]"
                     disabled={busyTableId === table.id}
-                    onClick={() => void onReserveToggle(table)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void onReserveToggle(table);
+                    }}
                     type="button"
                   >
                     {table.status === "RESERVED" ? "Liberar" : "Reservar"}

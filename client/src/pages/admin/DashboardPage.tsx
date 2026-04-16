@@ -24,6 +24,11 @@ type DashboardStatsResponse = {
   totalOrders: MetricComparison;
   averageTicket: MetricComparison;
   activeTables: MetricComparison;
+  paymentBreakdown: {
+    cash: { count: number; total: number };
+    card: { count: number; total: number };
+    mixed: { count: number; total: number };
+  };
   salesByHour: Array<{ hour: string; total: number }>;
   topProducts: Array<{ name: string; quantity: number; total: number }>;
   recentBills: Array<{
@@ -175,6 +180,38 @@ export default function DashboardPage() {
           value={String(stats.activeTables.current)}
         />
       </div>
+
+      <section className="surface-card p-5 md:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--color-text)]">Cobros por metodo de pago</h2>
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+              Resumen de hoy en efectivo, tarjeta y mixto.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <PaymentBreakdownCard
+            accent="bg-emerald-50 text-emerald-700"
+            count={stats.paymentBreakdown.cash.count}
+            label="Efectivo"
+            total={stats.paymentBreakdown.cash.total}
+          />
+          <PaymentBreakdownCard
+            accent="bg-blue-50 text-blue-700"
+            count={stats.paymentBreakdown.card.count}
+            label="Tarjeta"
+            total={stats.paymentBreakdown.card.total}
+          />
+          <PaymentBreakdownCard
+            accent="bg-amber-50 text-amber-700"
+            count={stats.paymentBreakdown.mixed.count}
+            label="Mixto"
+            total={stats.paymentBreakdown.mixed.total}
+          />
+        </div>
+      </section>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="surface-card p-5 md:p-6">
@@ -329,6 +366,27 @@ export default function DashboardPage() {
         )}
       </section>
     </section>
+  );
+}
+
+function PaymentBreakdownCard(props: {
+  label: string;
+  count: number;
+  total: number;
+  accent: string;
+}) {
+  return (
+    <article className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4">
+      <div className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${props.accent}`}>
+        {props.label}
+      </div>
+      <p className="mono mt-4 text-2xl font-bold text-[var(--color-text)]">
+        {formatCurrency(props.total)}
+      </p>
+      <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+        {props.count} cobro{props.count === 1 ? "" : "s"}
+      </p>
+    </article>
   );
 }
 

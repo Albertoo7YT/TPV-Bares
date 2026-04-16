@@ -27,6 +27,7 @@ type MenuProduct = {
   name: string;
   description?: string | null;
   price: number | string;
+  imageUrl?: string | null;
   available?: boolean;
   productIngredients?: ProductIngredient[];
 };
@@ -584,7 +585,7 @@ export default function OrderPage() {
   }
 
   return (
-    <section className="space-y-4 pb-32">
+    <section className="space-y-4 pb-40 md:pb-28">
       <header className="sticky top-[73px] z-20 -mx-4 border-b border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -629,9 +630,20 @@ export default function OrderPage() {
             {activeCategory?.products.map((product) => {
               const inCartCount = cart.filter((item) => item.productId === product.id).reduce((sum, item) => sum + item.quantity, 0);
               const available = product.available ?? true;
+              const hasImage = Boolean(product.imageUrl);
 
               return (
-                <article key={product.id} className={`flex min-h-[70px] rounded-xl border border-[#E5E2DC] bg-white p-3 transition-all duration-200 ${highlightedProductId === product.id ? "bg-orange-50 shadow-sm" : ""} ${available ? "" : "opacity-40"}`}>
+                <article key={product.id} className={`overflow-hidden rounded-xl border border-[#E5E2DC] bg-white transition-all duration-200 ${highlightedProductId === product.id ? "bg-orange-50 shadow-sm" : ""} ${available ? "" : "opacity-40"}`}>
+                  <div className="flex min-h-[84px] min-w-0 items-stretch gap-3 p-3">
+                    {hasImage ? (
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[var(--color-surface-muted)]">
+                        <img alt={product.name} className="h-full w-full object-cover" src={buildAssetUrl(product.imageUrl!)} />
+                      </div>
+                    ) : (
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-muted)] text-xl text-[var(--color-text-muted)]">
+                        <span aria-hidden="true">🍔</span>
+                      </div>
+                    )}
                   <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h2 className="truncate text-sm font-medium text-[var(--color-text)]">{product.name}</h2>
@@ -654,6 +666,7 @@ export default function OrderPage() {
                       </div>
                     )}
                   </div>
+                </div>
                 </article>
               );
             })}
@@ -759,7 +772,7 @@ export default function OrderPage() {
             )}
           </section>
 
-          <div className="surface-card fixed inset-x-0 bottom-20 border-t border-[var(--color-border)] bg-white px-4 pb-4 pt-3 md:bottom-0 md:left-auto md:right-4 md:max-w-md">
+          <div className="surface-card fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+6.25rem)] z-20 border-t border-[var(--color-border)] bg-white px-4 pb-4 pt-3 md:bottom-4 md:left-auto md:right-4 md:max-w-md md:rounded-2xl md:border">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm text-[var(--color-text-muted)]">{editingOrderId ? "Total pedido editado" : "Total pedido actual"}</span>
               <span className="mono text-2xl text-[var(--color-text)]">{formatCurrency(total)}</span>
@@ -883,4 +896,18 @@ function formatTime(value: string) {
     hour: "2-digit",
     minute: "2-digit"
   }).format(new Date(value));
+}
+
+function buildAssetUrl(path: string) {
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
+
+  if (apiBaseUrl.startsWith("http://") || apiBaseUrl.startsWith("https://")) {
+    return new URL(path, apiBaseUrl).toString();
+  }
+
+  return path;
 }
