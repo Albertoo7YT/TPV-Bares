@@ -207,10 +207,12 @@ export default function ProductsAdminPage() {
       if (productId) {
         await api.put(
           `/products/${productId}/ingredients`,
-          Object.entries(productModal.ingredientSelections).map(([ingredientId, isDefault]) => ({
-            ingredientId,
-            isDefault
-          }))
+          ingredients
+            .filter((ingredient) => ingredient.available)
+            .map((ingredient) => ({
+              ingredientId: ingredient.id,
+              isDefault: Boolean(productModal.ingredientSelections[ingredient.id])
+            }))
         );
       }
 
