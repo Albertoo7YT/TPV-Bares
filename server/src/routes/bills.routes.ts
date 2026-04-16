@@ -5,7 +5,8 @@ import {
   createBill,
   getBillById,
   getBillPreview,
-  listBills
+  listBills,
+  printBillReceipt
 } from "../services/billService.js";
 
 const router = Router();
@@ -34,6 +35,15 @@ router.post("/", async (request, response, next) => {
   try {
     const bill = await createBill(request.body, request.user!);
     response.status(201).json(bill);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/:id/print", roleMiddleware(["ADMIN", "WAITER"]), async (request, response, next) => {
+  try {
+    const result = await printBillReceipt(getRouteId(request.params.id, "billId"), request.user!);
+    response.json(result);
   } catch (error) {
     next(error);
   }

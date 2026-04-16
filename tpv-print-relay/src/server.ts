@@ -50,16 +50,39 @@ function hasPrinterConfigChanged(current: RelayConfig, next: RelayConfig) {
 async function refreshPrinterDiscovery() {
   const [printers, ports] = await Promise.all([listAvailablePrinters(), listAvailableUsbPorts()]);
 
+  const printerEntries = printers.map((entry) => {
+    const [name, port] = entry.split("|");
+    const cleanName = name?.trim() || entry;
+    const cleanPort = port?.trim() || "";
+
+    return {
+      name: cleanName,
+      port: cleanPort,
+      kind: "printer" as const,
+      label: cleanPort ? `${cleanName} (${cleanPort})` : cleanName,
+      value: cleanName
+    };
+  });
+
+  const knownPorts = new Set(
+    printerEntries
+      .map((entry) => entry.port)
+      .filter(Boolean)
+      .map((port) => port.toUpperCase())
+  );
+
+  const rawPortEntries = ports
+    .filter((port) => !knownPorts.has(port.toUpperCase()))
+    .map((port) => ({
+      name: port,
+      port,
+      kind: "raw-port" as const,
+      label: `Puerto raw ${port}`,
+      value: port
+    }));
+
   return {
-    printers: printers.map((entry) => {
-      const [name, port] = entry.split("|");
-      return {
-        name: name?.trim() || entry,
-        port: port?.trim() || "",
-        label: port ? `${name} (${port})` : entry,
-        value: port?.trim() || name?.trim() || entry
-      };
-    }),
+    printers: [...printerEntries, ...rawPortEntries],
     ports
   };
 }
@@ -77,9 +100,59 @@ function normalizeConfigPayload(payload: unknown, current: RelayConfig): Partial
         ? next.authToken.trim()
         : current.authToken;
 
+  const normalizePrinterConfig = (
+    printer: Partial<RelayConfig["printers"][PrinterRole]> | undefined,
+    currentPrinter: RelayConfig["printers"][PrinterRole]
+  ) => {
+    if (!printer) {
+      return currentPrinter;
+    }
+
+    return {
+      ...currentPrinter,
+      ...printer,
+      enabled:
+        typeof printer.enabled === "boolean"
+          ? printer.enabled
+          : currentPrinter.enabled,
+      type:
+        printer.type === "usb" || printer.type === "network"
+          ? printer.type
+          : currentPrinter.type,
+      usbPort:
+        typeof printer.usbPort === "string"
+          ? printer.usbPort.trim()
+          : currentPrinter.usbPort,
+      networkIp:
+        typeof printer.networkIp === "string"
+          ? printer.networkIp.trim()
+          : currentPrinter.networkIp,
+      networkPort:
+        typeof printer.networkPort === "number" && Number.isFinite(printer.networkPort)
+          ? printer.networkPort
+          : currentPrinter.networkPort
+    };
+  };
+
   return {
     ...next,
-    authToken
+    authToken,
+    serverUrl:
+      typeof next.serverUrl === "string" ? next.serverUrl.trim() : current.serverUrl,
+    restaurantId:
+      typeof next.restaurantId === "string" ? next.restaurantId.trim() : current.restaurantId,
+    autoReconnect:
+      typeof next.autoReconnect === "boolean"
+        ? next.autoReconnect
+        : current.autoReconnect,
+    reconnectInterval:
+      typeof next.reconnectInterval === "number" && Number.isFinite(next.reconnectInterval)
+        ? next.reconnectInterval
+        : current.reconnectInterval,
+    printers: {
+      kitchen: normalizePrinterConfig(next.printers?.kitchen, current.printers.kitchen),
+      receipt: normalizePrinterConfig(next.printers?.receipt, current.printers.receipt)
+    }
   };
 }
 

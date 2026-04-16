@@ -423,6 +423,24 @@ export async function createBill(input: CreateBillInput, user: AuthenticatedUser
   return fullBill;
 }
 
+export async function printBillReceipt(billId: string, user: AuthenticatedUser) {
+  const bill = await prisma.bill.findFirst({
+    where: {
+      id: billId,
+      table: {
+        restaurantId: user.restaurantId
+      }
+    }
+  });
+
+  if (!bill) {
+    throw createHttpError(404, "Bill not found");
+  }
+
+  const fullBill = await loadBillWithDetail(bill.id);
+  return sendReceiptPrintJob(user.restaurantId, fullBill, { force: true });
+}
+
 export async function listBills(input: ListBillsInput, user: AuthenticatedUser) {
   const from = normalizeDate(input.from, "from");
   const to = normalizeDate(input.to, "to");

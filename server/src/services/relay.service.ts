@@ -311,7 +311,11 @@ export async function sendKitchenPrintJob(restaurantId: string, order: KitchenOr
   });
 }
 
-export async function sendReceiptPrintJob(restaurantId: string, bill: ReceiptBillPayload) {
+export async function sendReceiptPrintJob(
+  restaurantId: string,
+  bill: ReceiptBillPayload,
+  options?: { force?: boolean }
+) {
   const restaurant = await (prisma.restaurant as unknown as {
     findUniqueOrThrow: (args: {
       where: { id: string };
@@ -345,7 +349,7 @@ export async function sendReceiptPrintJob(restaurantId: string, bill: ReceiptBil
     }
   });
 
-  if (!(restaurant as { autoPrintReceipt?: boolean }).autoPrintReceipt) {
+  if (!options?.force && !(restaurant as { autoPrintReceipt?: boolean }).autoPrintReceipt) {
     return {
       status: "printed" as const,
       message: "Auto print receipt disabled"

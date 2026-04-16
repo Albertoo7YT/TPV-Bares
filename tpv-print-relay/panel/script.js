@@ -108,7 +108,11 @@ function applyPrinterVisibility(printer) {
 
 function renderPrinterOptions() {
   Object.values(printerFields).forEach((fields) => {
-    const currentValue = fields.usbPort.value;
+    const savedValue = fields.usbPort.dataset.savedValue || fields.usbPort.value;
+    const mappedPrinterByPort = !availablePrinters.some((printer) => printer.value === savedValue)
+      ? availablePrinters.find((printer) => printer.kind === "printer" && printer.port === savedValue)
+      : null;
+    const currentValue = mappedPrinterByPort?.value || savedValue;
     const options = ['<option value="">Selecciona una impresora o puerto</option>']
       .concat(
         availablePrinters.map((printer) => {
@@ -127,6 +131,9 @@ function renderPrinterOptions() {
       option.selected = true;
       fields.usbPort.appendChild(option);
     }
+
+    fields.usbPort.value = currentValue || "";
+    fields.usbPort.dataset.savedValue = currentValue || "";
   });
 }
 
@@ -142,7 +149,7 @@ function applyConfig(config) {
     const fields = printerFields[printer];
     fields.enabled.value = String(cfg.enabled);
     fields.type.value = cfg.type;
-    fields.usbPort.value = cfg.usbPort || "";
+    fields.usbPort.dataset.savedValue = cfg.usbPort || "";
     fields.networkIp.value = cfg.networkIp || "";
     fields.networkPort.value = String(cfg.networkPort || 9100);
     applyPrinterVisibility(printer);
@@ -292,6 +299,46 @@ async function runPrinterTest(printer) {
   }
 }
 
+async function savePrinterConfig(targetPrinter) {
+  setPrinterHelp(targetPrinter, "Guardando configuracion...");
+
+  try {
+    const response = await fetch("/api/config", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(collectConfig())
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok || payload.success === false) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+
+    if (payload.config) {
+      applyConfig(payload.config);
+    }
+
+    if (payload.printerDiscovery) {
+      availablePrinters = payload.printerDiscovery.printers || availablePrinters;
+      renderPrinterOptions();
+    }
+
+    if (document.getElementById("authToken").value !== MASKED_TOKEN && payload.config?.authToken) {
+      document.getElementById("authToken").value = payload.config.authToken;
+    }
+
+    setPrinterHelp(targetPrinter, "Configuracion guardada.");
+    setFormStatus(`Configuracion de ${targetPrinter === "kitchen" ? "cocina" : "caja"} guardada.`);
+    document.getElementById("connect-button").textContent = "Reconectar";
+    await refreshStatus();
+  } catch (error) {
+    setPrinterHelp(targetPrinter, `No se pudo guardar la configuracion: ${error}`, true);
+  }
+}
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   setFormStatus("Guardando configuracion...");
@@ -341,6 +388,12 @@ document.querySelectorAll("[data-detect]").forEach((button) => {
 document.querySelectorAll("[data-test]").forEach((button) => {
   button.addEventListener("click", () => {
     runPrinterTest(button.getAttribute("data-test"));
+  });
+});
+
+document.querySelectorAll("[data-save-printer]").forEach((button) => {
+  button.addEventListener("click", () => {
+    savePrinterConfig(button.getAttribute("data-save-printer"));
   });
 });
 

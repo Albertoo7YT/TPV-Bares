@@ -44,6 +44,7 @@ export default function BillPage() {
   const [cardAmount, setCardAmount] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdBill, setCreatedBill] = useState<CreatedBill | null>(null);
 
@@ -101,18 +102,18 @@ export default function BillPage() {
     }
   };
 
-  const handleShareTicket = async () => {
+  const handlePrintTicket = async () => {
     if (!createdBill) return;
-    const ticketText = buildTicketText(createdBill);
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `Ticket mesa ${createdBill.table.number}`, text: ticketText });
-        return;
-      } catch {
-        // ignore and fallback
-      }
+    setPrinting(true);
+    try {
+      await api.post(`/bills/${createdBill.id}/print`);
+      showToast({ type: "success", title: "Ticket", message: "Ticket enviado a la impresora" });
+    } catch (printError) {
+      const message = printError instanceof Error ? printError.message : "No se pudo imprimir el ticket";
+      showToast({ type: "error", title: "Ticket", message });
+    } finally {
+      setPrinting(false);
     }
-    window.print();
   };
 
   return (
@@ -168,12 +169,13 @@ export default function BillPage() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <button
-              aria-label="Ver o compartir ticket"
+              aria-label="Imprimir ticket"
               className="btn-secondary px-5 py-4 text-sm font-medium"
-              onClick={handleShareTicket}
+              disabled={printing}
+              onClick={handlePrintTicket}
               type="button"
             >
-              Ver ticket / Compartir
+              {printing ? <Spinner className="h-5 w-5" label="Imprimiendo..." /> : "Imprimir ticket"}
             </button>
 
             <button
@@ -376,21 +378,6 @@ function buildTicketLines(bill: CreatedBill) {
     }
   }
   return Array.from(grouped.values());
-}
-
-function buildTicketText(bill: CreatedBill) {
-  const lines = buildTicketLines(bill).map((line) => `${line.quantity}x ${line.name}  ${formatCurrency(line.total)}`).join("\n");
-  return [
-    "DEJA VU",
-    new Date(bill.paidAt).toLocaleString("es-ES"),
-    `Mesa ${bill.table.number}`,
-    "------------------------------",
-    lines,
-    "------------------------------",
-    `Subtotal ${formatCurrency(toNumber(bill.subtotal))}`,
-    `IVA ${formatCurrency(toNumber(bill.tax))}`,
-    `TOTAL ${formatCurrency(toNumber(bill.total))}`
-  ].join("\n");
 }
 
 function toNumber(value: string | number) {

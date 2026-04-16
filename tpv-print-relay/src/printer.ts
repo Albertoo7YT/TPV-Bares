@@ -10,7 +10,7 @@ import { generateTestTicket } from "./escpos";
 import { logger } from "./logger";
 
 const execFileAsync = promisify(execFile);
-const PRINTER_TIMEOUT_MS = 3000;
+const PRINTER_TIMEOUT_MS = 10000;
 
 export type PrintResult = {
   success: boolean;
@@ -19,11 +19,15 @@ export type PrintResult = {
 
 function withTimeoutError(error: unknown) {
   if (error instanceof Error) {
-    if ("killed" in error || /timed out/i.test(error.message)) {
-      return "Timeout de impresion (3s)";
+    const details = error as Error & { killed?: boolean; stdout?: string; stderr?: string };
+
+    if (details.killed === true || /timed out/i.test(error.message)) {
+      return "Timeout de impresion (10s)";
     }
 
-    return error.message;
+    const output = [details.stderr?.trim(), details.stdout?.trim()].filter(Boolean).join(" ");
+
+    return output ? `${error.message} ${output}`.trim() : error.message;
   }
 
   return String(error);
@@ -88,7 +92,99 @@ function normalizeUsbTarget(usbPort: string) {
     return usbPort;
   }
 
-  return `\\\\.\\${usbPort}`;
+  if (/^(USB|LPT)\d+/i.test(usbPort)) {
+    return `\\\\.\\${usbPort}`;
+  }
+
+  return `\\\\localhost\\${usbPort}`;
+}
+
+function isRawPortTarget(usbPort: string) {
+  return usbPort.startsWith("\\\\") || usbPort.startsWith("\\\\.\\") || /^(USB|LPT)\d+/i.test(usbPort);
+}
+
+async function printToWindowsQueue(printerName: string, filePath: string): Promise<PrintResult> {
+  const escapedPrinterName = printerName.replace(/'/g, "''");
+  const escapedFilePath = filePath.replace(/'/g, "''");
+  const command = [
+    `$printerName = '${escapedPrinterName}'`,
+    `$filePath = '${escapedFilePath}'`,
+    "$source = @'",
+    "using System;",
+    "using System.IO;",
+    "using System.Runtime.InteropServices;",
+    "public static class RawPrinterHelper {",
+    "  [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]",
+    "  public class DOCINFOA {",
+    "    [MarshalAs(UnmanagedType.LPWStr)] public string pDocName;",
+    "    [MarshalAs(UnmanagedType.LPWStr)] public string pOutputFile;",
+    "    [MarshalAs(UnmanagedType.LPWStr)] public string pDataType;",
+    "  }",
+    "  [DllImport(\"winspool.Drv\", EntryPoint = \"OpenPrinterW\", SetLastError = true, CharSet = CharSet.Unicode)]",
+    "  public static extern bool OpenPrinter(string szPrinter, out IntPtr hPrinter, IntPtr pd);",
+    "  [DllImport(\"winspool.Drv\", SetLastError = true)]",
+    "  public static extern bool ClosePrinter(IntPtr hPrinter);",
+    "  [DllImport(\"winspool.Drv\", SetLastError = true, CharSet = CharSet.Unicode)]",
+    "  public static extern int StartDocPrinter(IntPtr hPrinter, int level, [In] DOCINFOA di);",
+    "  [DllImport(\"winspool.Drv\", SetLastError = true)]",
+    "  public static extern bool EndDocPrinter(IntPtr hPrinter);",
+    "  [DllImport(\"winspool.Drv\", SetLastError = true)]",
+    "  public static extern bool StartPagePrinter(IntPtr hPrinter);",
+    "  [DllImport(\"winspool.Drv\", SetLastError = true)]",
+    "  public static extern bool EndPagePrinter(IntPtr hPrinter);",
+    "  [DllImport(\"winspool.Drv\", SetLastError = true)]",
+    "  public static extern bool WritePrinter(IntPtr hPrinter, byte[] bytes, int count, out int written);",
+    "}",
+    "'@",
+    "$ErrorActionPreference = 'Stop'",
+    "Add-Type -TypeDefinition $source | Out-Null",
+    "$bytes = [System.IO.File]::ReadAllBytes($filePath)",
+    "$docInfo = New-Object RawPrinterHelper+DOCINFOA",
+    "$docInfo.pDocName = 'TPV Print Relay'",
+    "$docInfo.pDataType = 'RAW'",
+    "$printerHandle = [IntPtr]::Zero",
+    "if (-not [RawPrinterHelper]::OpenPrinter($printerName, [ref]$printerHandle, [IntPtr]::Zero)) { throw 'No se pudo abrir la impresora.' }",
+    "$docStarted = $false",
+    "$pageStarted = $false",
+    "try {",
+    "  $jobId = [RawPrinterHelper]::StartDocPrinter($printerHandle, 1, $docInfo)",
+    "  if ($jobId -le 0) { throw 'No se pudo iniciar el documento RAW.' }",
+    "  $docStarted = $true",
+    "  try {",
+    "    if (-not [RawPrinterHelper]::StartPagePrinter($printerHandle)) { throw 'No se pudo iniciar la pagina.' }",
+    "    $pageStarted = $true",
+    "    try {",
+    "      $written = 0",
+    "      if (-not [RawPrinterHelper]::WritePrinter($printerHandle, $bytes, $bytes.Length, [ref]$written)) { throw 'No se pudo escribir en la cola de impresion.' }",
+    "      if ($written -ne $bytes.Length) { throw 'La cola no acepto todos los bytes RAW.' }",
+    "    } finally {",
+    "      if ($pageStarted) { [RawPrinterHelper]::EndPagePrinter($printerHandle) | Out-Null }",
+    "    }",
+    "  } finally {",
+    "    if ($docStarted) { [RawPrinterHelper]::EndDocPrinter($printerHandle) | Out-Null }",
+    "  }",
+    "} finally {",
+    "  [RawPrinterHelper]::ClosePrinter($printerHandle) | Out-Null",
+    "}"
+  ].join("\r\n");
+
+  try {
+    await execFileAsync(
+      "powershell.exe",
+      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
+      {
+        timeout: PRINTER_TIMEOUT_MS,
+        windowsHide: true
+      }
+    );
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: withTimeoutError(error)
+    };
+  }
 }
 
 async function printToUsb(printerConfig: PrinterConfig, data: Buffer): Promise<PrintResult> {
@@ -102,6 +198,10 @@ async function printToUsb(printerConfig: PrinterConfig, data: Buffer): Promise<P
 
   try {
     await writeFile(filePath, data);
+
+    if (!isRawPortTarget(printerConfig.usbPort)) {
+      return await printToWindowsQueue(printerConfig.usbPort, filePath);
+    }
 
     await execFileAsync(
       "cmd.exe",

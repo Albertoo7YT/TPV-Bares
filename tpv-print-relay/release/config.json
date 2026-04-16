@@ -1,7 +1,7 @@
 {
-  "serverUrl": "http://localhost:5173",
-  "authToken": "d5557f73-b295-431d-9e30-43d5a6a755b0",
-  "restaurantId": "cmo0jxirv0000vyeci4znj52z",
+  "serverUrl": "https://tpv.rulls.eu",
+  "authToken": "dba1a14c-a76a-4a46-b151-f3172225809f",
+  "restaurantId": "cmo0o239h0000jxh77is9vluv",
   "printers": {
     "kitchen": {
       "enabled": true,
@@ -11,9 +11,9 @@
       "networkPort": 9100
     },
     "receipt": {
-      "enabled": false,
+      "enabled": true,
       "type": "usb",
-      "usbPort": "",
+      "usbPort": "EPSON TM-T20II Receipt",
       "networkIp": "",
       "networkPort": 9100
     }
